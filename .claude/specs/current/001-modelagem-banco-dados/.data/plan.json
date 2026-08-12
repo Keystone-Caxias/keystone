@@ -1,0 +1,62 @@
+{
+  "feature_id": "001-modelagem-banco-dados",
+  "status": "aprovado",
+  "baseado_em_spec_de": "2026-08-12",
+  "abordagem": "O schema é implementado como SQL puro, sem ORM (não há stack de aplicação definida ainda). Uma única migration cria o tipo enum de Potência Simbólica e as cinco tabelas (loja, macom, arco_real, marca, nauta) com suas FKs e constraints. Os arquivos seguem a convenção do Supabase CLI (`supabase/migrations/` e `supabase/seed.sql`), já que o Supabase é o alvo de produção decidido na spec — isso evita reescrever os scripts quando o projeto migrar do Postgres local para o Supabase remoto.\n\nValidação acontece em duas camadas: estrutural (aplicar a migration no Postgres 18 local e conferir com `\\d` que tabelas/constraints existem como esperado) e comportamental (rodar o seed com dados de exemplo e tentar violar constraints propositalmente — CPF duplicado, potência simbólica inválida, mais de um registro de Arco Real para o mesmo maçom — confirmando que o banco rejeita).\n\nTodas as chaves primárias usam UUID via `gen_random_uuid()`, função nativa do Postgres desde a v13 (sem precisar de extensão), conforme decidido na spec para evitar CPF como chave primária propagada.",
+  "decisoes_tecnicas": [
+    {
+      "decisao": "Onde ficam os arquivos SQL",
+      "escolha": "Migration em supabase/migrations/<timestamp>_criar_schema_macons.sql, seed em supabase/seed.sql",
+      "alternativas": ["Pasta db/ genérica sem convenção", "Adiar decisão de layout até escolher stack de aplicação"],
+      "por_que": "O Supabase CLI já está instalado e o Supabase é o alvo de produção decidido na spec. Usar a convenção do CLI agora evita retrabalho: quando o app rodar `supabase db push`, o schema já está no lugar certo."
+    },
+    {
+      "decisao": "Geração de identificadores primários",
+      "escolha": "UUID via gen_random_uuid(), função nativa do Postgres (core desde a v13)",
+      "alternativas": ["serial/bigserial incremental", "extensão uuid-ossp"],
+      "por_que": "A spec decidiu ID substituto como PK (CPF fica só como campo único). UUID evita IDs sequenciais previsíveis e não exige nenhuma extensão adicional no Postgres 18 já instalado."
+    },
+    {
+      "decisao": "Representação da Potência Simbólica",
+      "escolha": "Tipo ENUM nativo do Postgres (CREATE TYPE potencia_simbolica AS ENUM (...))",
+      "alternativas": ["Tabela de lookup separada", "CHECK constraint sobre TEXT"],
+      "por_que": "A spec pediu lista fechada (GOB, CMSB, COMAB). Enum nativo garante isso no nível do banco com uma declaração simples, sem tabela extra para 3 valores fixos."
+    },
+    {
+      "decisao": "Cardinalidade Maçom × Ordens Inglesas",
+      "escolha": "FK macom_id com constraint UNIQUE em cada uma das tabelas arco_real, marca e nauta",
+      "alternativas": ["Sem UNIQUE, permitindo múltiplos registros por ordem", "Colunas das ordens embutidas direto na tabela macom"],
+      "por_que": "A spec resolveu como registro único por ordem por maçom (1:0..1). UNIQUE na FK faz o banco garantir essa regra sozinho, sem depender de validação na aplicação."
+    }
+  ],
+  "arquivos": {
+    "criados": [
+      { "caminho": "supabase/migrations/20260812120000_criar_schema_macons.sql", "proposito": "DDL completo: enum de potência simbólica e as 5 tabelas (loja, macom, arco_real, marca, nauta) com PKs, FKs, UNIQUEs e NOT NULLs" },
+      { "caminho": "supabase/seed.sql", "proposito": "Dados de exemplo (1-2 lojas, 2-3 maçons, registros de ordens) para validar manualmente que o schema aceita e restringe dados corretamente" }
+    ],
+    "modificados": [],
+    "nao_tocados": [
+      { "caminho": "rascunho_DB.md", "razao": "É a fonte original do rascunho; fica como está para referência histórica" },
+      { "caminho": ".claude/specs/current/001-modelagem-banco-dados/.data/spec.json", "razao": "Plan não altera spec — se algo aqui exigir mudança na spec, volta para o Spec Architect" }
+    ]
+  },
+  "estrutura_dados": "```sql\nCREATE TYPE potencia_simbolica AS ENUM ('GOB', 'CMSB', 'COMAB');\n\nCREATE TABLE loja (\n    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    nome TEXT NOT NULL,\n    potencia_simbolica potencia_simbolica NOT NULL,\n    endereco TEXT\n);\n\nCREATE TABLE macom (\n    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    foto TEXT,\n    nome TEXT NOT NULL,\n    data_nascimento DATE,\n    cpf TEXT NOT NULL UNIQUE,\n    telefone TEXT,\n    email TEXT,\n    endereco TEXT,\n    cep TEXT,\n    cim TEXT,\n    data_iniciacao DATE,\n    data_passagem DATE,\n    data_elevacao DATE,\n    data_instalacao_mi DATE,\n    loja_id UUID REFERENCES loja(id)\n);\n\nCREATE TABLE arco_real (\n    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    macom_id UUID NOT NULL UNIQUE REFERENCES macom(id),\n    nome_capitulo TEXT,\n    proposto_por TEXT,\n    secundado_por TEXT,\n    data_exaltacao DATE,\n    data_instalacao_3p DATE,\n    data_instalacao_2p DATE,\n    data_instalacao_1p DATE\n);\n\nCREATE TABLE marca (\n    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    macom_id UUID NOT NULL UNIQUE REFERENCES macom(id),\n    nome_loja_marca TEXT,\n    proposto_por TEXT,\n    secundado_por TEXT,\n    data_avancamento DATE,\n    data_instalacao_vm DATE,\n    marca_candidato TEXT\n);\n\nCREATE TABLE nauta (\n    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    macom_id UUID NOT NULL UNIQUE REFERENCES macom(id),\n    nome_loja_nauta TEXT,\n    data_elevacao DATE,\n    data_instalacao_vc DATE\n);\n\nCREATE INDEX idx_macom_loja_id ON macom(loja_id);\n```",
+  "fluxo_principal": "1. Aplicar a migration no Postgres local: `psql -U postgres -d keystone_dev -f supabase/migrations/20260812120000_criar_schema_macons.sql`\n2. Validar estrutura com `\\d loja`, `\\d macom`, `\\d arco_real`, `\\d marca`, `\\d nauta` no psql — conferir PKs, FKs, UNIQUEs e o enum.\n3. Rodar o seed: `psql -U postgres -d keystone_dev -f supabase/seed.sql`.\n4. Tentar violar constraints propositalmente (CPF duplicado, potência simbólica fora do enum, segundo registro de Arco Real para o mesmo maçom) e confirmar que o Postgres rejeita cada tentativa.",
+  "consideracoes": {
+    "performance": "UNIQUE em cpf e nas FKs macom_id das tabelas de ordens já cria índice automaticamente. Índice extra criado em macom.loja_id para acelerar joins/listagens de maçons por loja.",
+    "acessibilidade": "Não se aplica — não há UI nesta feature.",
+    "seguranca": "CPF é dado pessoal sensível armazenado em texto plano. RLS (Row Level Security) do Supabase e qualquer mascaramento/criptografia ficam fora de escopo desta feature — registrar no INBOX.md como pendência para quando a camada de acesso/autenticação for definida.",
+    "i18n": "Não se aplica."
+  },
+  "testes": "Sem testes automatizados nesta fase — não há stack de aplicação/framework de testes definido ainda. Validação é manual via psql: aplicar migration, rodar seed, e tentar violar cada constraint (CPF duplicado, enum inválido, ordem duplicada por maçom) confirmando que o banco rejeita.",
+  "riscos": [
+    { "risco": "O Postgres do Supabase (produção) pode estar em versão diferente da v18 instalada localmente", "mitigacao": "Usar apenas SQL padrão e funções estáveis desde a v13 (gen_random_uuid, ENUM); confirmar a versão do Postgres do projeto Supabase antes de portar a migration." },
+    { "risco": "CPF em texto plano é dado sensível exposto a qualquer leitura direta da tabela", "mitigacao": "Fora de escopo tratar nesta feature; sinalizado em `consideracoes.seguranca` e a ser endereçado quando RLS/autenticação entrarem em pauta." }
+  ],
+  "rollout": "Aplicado primeiro no Postgres local (ambiente de dev) para validação. Ao migrar para o Supabase de produção, o mesmo arquivo de migration é aplicado via `supabase db push` (ou copiado para o projeto Supabase) — não há dado de produção existente, então não há migração de dados, só de schema.",
+  "fora_escopo_tecnico": [
+    "RLS (Row Level Security) do Supabase",
+    "Índices além de PK/UNIQUE/FK e do índice em loja_id",
+    "Camada de aplicação, ORM ou API"
+  ]
+}

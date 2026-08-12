@@ -1,0 +1,59 @@
+{
+  "feature_id": "001-modelagem-banco-dados",
+  "status": "pronto",
+  "criada_em": "2026-08-12",
+  "autor": "",
+  "dominio": "dados",
+  "tags": ["maconaria", "cadastro", "modelagem-dados"],
+  "objetivo": "Definir a estrutura de dados (entidades, campos e relacionamentos) para cadastrar maçons, suas lojas e sua participação nas Ordens Inglesas (Arco Real, Marca e Nauta), com base no rascunho `rascunho_DB.md`.",
+  "motivacao": "O projeto Keystone ainda não tem nenhum modelo de dados definido. Antes de escolher stack ou escrever qualquer código, é preciso consolidar em uma spec o que o rascunho descreve solto, resolvendo as ambiguidades de relacionamento e identificadores que o rascunho não deixa claras.",
+  "escopo": {
+    "inclui": [
+      "Entidade Maçom: foto, nome, data de nascimento, CPF, telefone, e-mail, endereço com CEP, CIM, datas de iniciação/passagem/elevação/instalação (se MI)",
+      "Entidade Loja: nome (Craft), Potência Simbólica (GOB, CMSB ou COMAB), endereço",
+      "Relacionamento Maçom-Loja",
+      "Entidade/registro do Arco Real: capítulo, proposto por, secundado por, data de exaltação, datas de instalação 3ºP/2ºP/1ºP",
+      "Entidade/registro da Marca: loja de Mestre Maçom da Marca, proposto por, secundado por, data de avançamento, data de instalação VM, marca do candidato",
+      "Entidade/registro do Nauta: loja de Nautas da Arca Real, data de elevação, data de instalação VC",
+      "Definição de chaves primárias e estratégia de identificação (CPF vs. ID substituto)"
+    ],
+    "nao_inclui": [
+      "Escolha do SGBD/stack de persistência (decidida separadamente, ver `precisa_esclarecer` e CLAUDE.md)",
+      "Autenticação e controle de acesso",
+      "UI/telas de cadastro",
+      "Migrações/scripts de criação de banco (fica para o `plan`)",
+      "Fluxo de pagamento/mensalidades ou outras áreas não mencionadas no rascunho"
+    ]
+  },
+  "criterios_aceitacao": [
+    { "texto": "Todos os campos listados em `rascunho_DB.md` estão mapeados para uma entidade e um tipo de dado", "atendido": false },
+    { "texto": "A cardinalidade entre Maçom e Loja está definida e documentada", "atendido": false },
+    { "texto": "A cardinalidade entre Maçom e cada Ordem Inglesa (Arco Real, Marca, Nauta) está definida e documentada", "atendido": false },
+    { "texto": "A estratégia de chave primária (CPF real ou ID substituto) está decidida e justificada", "atendido": false },
+    { "texto": "Nenhum item de `precisa_esclarecer` permanece em aberto", "atendido": false }
+  ],
+  "cenarios": {
+    "feliz": "Um administrador cadastra um novo maçom com seus dados básicos, associa-o a uma loja existente e registra sua participação em uma ou mais Ordens Inglesas.",
+    "alternativos": [
+      { "situacao": "Maçom ainda não participa de nenhuma Ordem Inglesa", "comportamento": "Os registros de Arco Real, Marca e Nauta são opcionais e podem ficar vazios sem impedir o cadastro básico" },
+      { "situacao": "Maçom muda de loja ao longo do tempo", "comportamento": "O campo de Loja atual é atualizado (FK sobrescrita); o histórico de lojas anteriores não é mantido nesta versão" }
+    ]
+  },
+  "restricoes": [
+    "Qualquer dependência/tecnologia introduzida precisa ser compatível com GPL-3.0 (ver CLAUDE.md)",
+    "SGBD decidido: PostgreSQL — instância local (v18) para desenvolvimento e validação do schema/DDL; Supabase (Postgres gerenciado) como alvo de produção — a ser refletido em CLAUDE.md como trava técnica quando a implementação começar"
+  ],
+  "dependencias": [],
+  "precisa_esclarecer": [
+    { "pergunta": "Qual SGBD/tecnologia de persistência usar (ex: PostgreSQL, SQLite, MySQL, Supabase)? O CLAUDE.md do projeto proíbe assumir stack sem perguntar.", "resolvido": true, "resposta": "PostgreSQL local (v18, instalado em /Library/PostgreSQL/18) para desenvolvimento e validação do schema. Supabase (Postgres gerenciado) segue como alvo de produção — ambos usam Postgres puro, então o schema/DDL validado localmente é diretamente portável." },
+    { "pergunta": "O CPF deve ser a chave primária real da tabela de Maçom (como o rascunho sugere), ou usar um ID substituto (surrogate key) com CPF como campo único? CPF como PK se propaga como FK em todas as tabelas relacionadas.", "resolvido": true, "resposta": "ID substituto (ex: UUID) como PK; CPF fica como campo único (unique), não como FK propagada." },
+    { "pergunta": "Um maçom pertence a uma única Loja atual, ou o sistema precisa manter histórico de transferências entre lojas ao longo do tempo?", "resolvido": true, "resposta": "Só loja atual (1 FK direta em Maçom). Histórico de transferências fica fora de escopo por ora; pode virar feature nova depois." },
+    { "pergunta": "Para cada Ordem Inglesa (Arco Real, Marca, Nauta), um maçom pode ter mais de um registro (ex: participar de mais de um Capítulo de Arco Real), ou é sempre um registro único por ordem por maçom?", "resolvido": true, "resposta": "Um registro único por ordem por maçom (relação 1:0..1 entre Maçom e cada uma das três ordens)." },
+    { "pergunta": "Como a foto do maçom deve ser armazenada (caminho de arquivo, BLOB no banco, URL externa)?", "resolvido": true, "resposta": "URL/caminho de arquivo (texto), apontando para armazenamento externo (ex: Supabase Storage) — não BLOB no banco relacional." },
+    { "pergunta": "Potência Simbólica (GOB, CMSB, COMAB) é uma lista fechada (enum) ou precisa aceitar outros valores no futuro?", "resolvido": true, "resposta": "Enum fechado com os três valores: GOB, CMSB, COMAB." }
+  ],
+  "fora_escopo": [
+    "Gestão financeira (mensalidades, contribuições)",
+    "Outras ordens/graus não mencionados no rascunho (ex: Rito Escocês, Cavaleiros Templários) até que sejam explicitamente solicitados"
+  ]
+}

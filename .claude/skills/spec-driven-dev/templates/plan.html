@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Plan — {{FEATURE_ID}}</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --bg-elev: #171a21;
+    --bg-input: #1f232c;
+    --border: #2a2f3a;
+    --border-strong: #3a4150;
+    --text: #e6e8ec;
+    --text-dim: #9aa3b2;
+    --accent: #7aa2f7;
+    --accent-soft: rgba(122, 162, 247, 0.12);
+    --ok: #9ece6a;
+    --warn: #e0af68;
+    --danger: #f7768e;
+    --radius: 6px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); margin: 0; padding: 32px 20px 120px; line-height: 1.55; }
+  .container { max-width: 880px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  h1 .feature-id { color: var(--text-dim); font-weight: 400; font-family: var(--mono); }
+  .meta { display: flex; gap: 12px; color: var(--text-dim); font-size: 13px; margin-bottom: 28px; flex-wrap: wrap; }
+  .meta label { display: inline-flex; gap: 6px; align-items: center; }
+  .meta input, .meta select { background: var(--bg-input); border: 1px solid var(--border); color: var(--text); padding: 3px 8px; border-radius: 4px; font-size: 13px; font-family: inherit; }
+  .status-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+  .status-rascunho { background: rgba(224, 175, 104, 0.15); color: var(--warn); }
+  .status-aprovado { background: rgba(158, 206, 106, 0.15); color: var(--ok); }
+
+  section { background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+  section > h2 { font-size: 14px; font-weight: 600; margin: 0; padding: 12px 16px; background: var(--bg-input); border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+  section > h2::after { content: "▾"; color: var(--text-dim); font-size: 11px; transition: transform 0.15s; }
+  section.collapsed > h2::after { transform: rotate(-90deg); }
+  section.collapsed > .body { display: none; }
+  .body { padding: 16px; }
+
+  textarea, input[type="text"] { width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 4px; font-family: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  textarea.lg { min-height: 90px; }
+  textarea.code { font-family: var(--mono); font-size: 13px; min-height: 140px; }
+
+  h4 { font-size: 13px; font-weight: 600; color: var(--text-dim); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  h4:not(:first-child) { margin-top: 16px; }
+
+  ul.editable { list-style: none; padding: 0; margin: 0; }
+  ul.editable li { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  ul.editable li > input[type="text"], ul.editable li > textarea { flex: 1; }
+  .row-actions { display: flex; gap: 4px; }
+  button.icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
+  button.icon-btn:hover { background: var(--bg-input); color: var(--text); }
+  button.add-btn { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-dim); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-family: inherit; margin-top: 4px; }
+  button.add-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Tabela de decisões técnicas */
+  .decision-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .decision-row.header {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .decision-row textarea { min-height: 60px; }
+
+  /* Arquivos */
+  .file-row {
+    display: grid;
+    grid-template-columns: 280px 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .file-row input[name="caminho"] { font-family: var(--mono); font-size: 13px; }
+  @media (max-width: 720px) {
+    .file-row { grid-template-columns: 1fr; }
+  }
+
+  .pair-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .empty-hint { color: var(--text-dim); font-size: 13px; font-style: italic; }
+
+  .toolbar { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--bg-elev); border: 1px solid var(--border-strong); border-radius: 999px; padding: 8px 12px; display: flex; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 100; }
+  .toolbar button { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 999px; cursor: pointer; font-size: 13px; font-family: inherit; }
+  .toolbar button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+  .toolbar button:hover { filter: brightness(1.15); }
+
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--bg-elev); border: 1px solid var(--border-strong); border-radius: 8px; padding: 20px; max-width: 720px; width: 90vw; max-height: 80vh; display: flex; flex-direction: column; }
+  .modal h3 { margin: 0 0 12px; font-size: 16px; }
+  .modal textarea { flex: 1; font-family: var(--mono); font-size: 12px; min-height: 300px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+
+  .toast { position: fixed; top: 20px; right: 20px; background: var(--ok); color: var(--bg); padding: 10px 16px; border-radius: 4px; font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(-10px); transition: all 0.2s; z-index: 300; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<script type="application/json" id="plan-data">
+{{PLAN_JSON}}
+</script>
+
+<div class="container">
+  <header>
+    <h1>Plan — <span class="feature-id" id="feature-id-display"></span></h1>
+    <span class="status-pill" id="status-pill"></span>
+  </header>
+
+  <div class="meta">
+    <label>Status:
+      <select id="field-status">
+        <option value="rascunho">rascunho</option>
+        <option value="aprovado">aprovado</option>
+      </select>
+    </label>
+    <label>Baseado em spec de: <input type="text" id="field-baseado" size="10"></label>
+  </div>
+
+  <section>
+    <h2>Abordagem geral</h2>
+    <div class="body">
+      <textarea id="field-abordagem" class="lg" placeholder="2–4 parágrafos: estratégia técnica em alto nível, sem entrar em código."></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisões técnicas</h2>
+    <div class="body">
+      <div class="decision-row header">
+        <div>Decisão</div>
+        <div>Escolha (alternativas)</div>
+        <div>Por quê</div>
+        <div></div>
+      </div>
+      <div id="list-decisoes"></div>
+      <button class="add-btn" data-add="decisao">+ adicionar decisão</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Arquivos a tocar</h2>
+    <div class="body">
+      <h4>Criados</h4>
+      <div id="list-criados"></div>
+      <button class="add-btn" data-add="criado">+ adicionar arquivo criado</button>
+
+      <h4>Modificados</h4>
+      <div id="list-modificados"></div>
+      <button class="add-btn" data-add="modificado">+ adicionar arquivo modificado</button>
+
+      <h4>Não tocados (explícito)</h4>
+      <p class="empty-hint">Arquivos que poderiam parecer envolvidos mas ficam de fora.</p>
+      <div id="list-nao-tocados"></div>
+      <button class="add-btn" data-add="nao_tocado">+ adicionar arquivo não tocado</button>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Estrutura de dados</h2>
+    <div class="body">
+      <textarea id="field-estrutura" class="code" placeholder="// schema, tipos, interfaces — pode incluir blocos de código"></textarea>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Fluxo principal</h2>
+    <div class="body">
+      <textarea id="field-fluxo" class="code" placeholder="1. Usuário clica em X&#10;2. Componente Y emite evento Z&#10;3. ..."></textarea>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Considerações</h2>
+    <div class="body">
+      <h4>Performance</h4>
+      <textarea id="field-performance" placeholder="O que pode pesar. Onde otimizar (e onde não)."></textarea>
+      <h4>Acessibilidade</h4>
+      <textarea id="field-a11y" placeholder="Atalhos de teclado, ARIA, contraste, etc."></textarea>
+      <h4>Segurança / privacidade</h4>
+      <textarea id="field-seguranca" placeholder="Dados sensíveis, validação de input, RLS."></textarea>
+      <h4>Internacionalização</h4>
+      <textarea id="field-i18n" placeholder="Strings em i18n? Formato de data/moeda?"></textarea>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Testes</h2>
+    <div class="body">
+      <textarea id="field-testes" class="lg" placeholder="Estratégia de teste: unit, integração, e2e. O que cobrir, o que deixar manual."></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2>Riscos e mitigações</h2>
+    <div class="body">
+      <div id="list-riscos"></div>
+      <button class="add-btn" data-add="risco">+ adicionar risco</button>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Rollout</h2>
+    <div class="body">
+      <textarea id="field-rollout" placeholder="Como colocar em produção. Feature flag? Migração? Janela?"></textarea>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Fora de escopo (técnico)</h2>
+    <div class="body">
+      <ul class="editable" id="list-fora-escopo"></ul>
+      <button class="add-btn" data-add="fora_escopo">+ adicionar item</button>
+    </div>
+  </section>
+</div>
+
+<div class="toolbar">
+  <button id="btn-export">📋 Copiar JSON</button>
+  <button id="btn-view-json">{ } Ver JSON</button>
+  <button id="btn-save" class="primary">💾 Salvar (baixar HTML)</button>
+</div>
+
+<div class="modal-backdrop" id="modal-json">
+  <div class="modal">
+    <h3>JSON do plan</h3>
+    <textarea id="json-display" readonly></textarea>
+    <div class="modal-actions">
+      <button class="add-btn" onclick="closeModal()">Fechar</button>
+      <button class="add-btn" onclick="copyJson()">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let state = JSON.parse(document.getElementById('plan-data').textContent);
+
+function ensureShape() {
+  state.decisoes_tecnicas = state.decisoes_tecnicas || [];
+  state.arquivos = state.arquivos || { criados: [], modificados: [], nao_tocados: [] };
+  state.arquivos.criados = state.arquivos.criados || [];
+  state.arquivos.modificados = state.arquivos.modificados || [];
+  state.arquivos.nao_tocados = state.arquivos.nao_tocados || [];
+  state.consideracoes = state.consideracoes || {};
+  state.riscos = state.riscos || [];
+  state.fora_escopo_tecnico = state.fora_escopo_tecnico || [];
+}
+ensureShape();
+
+function render() {
+  document.getElementById('feature-id-display').textContent = state.feature_id || '???';
+  document.getElementById('field-status').value = state.status || 'rascunho';
+  document.getElementById('field-baseado').value = state.baseado_em_spec_de || '';
+  document.getElementById('field-abordagem').value = state.abordagem || '';
+  document.getElementById('field-estrutura').value = state.estrutura_dados || '';
+  document.getElementById('field-fluxo').value = state.fluxo_principal || '';
+  document.getElementById('field-performance').value = state.consideracoes.performance || '';
+  document.getElementById('field-a11y').value = state.consideracoes.acessibilidade || '';
+  document.getElementById('field-seguranca').value = state.consideracoes.seguranca || '';
+  document.getElementById('field-i18n').value = state.consideracoes.i18n || '';
+  document.getElementById('field-testes').value = state.testes || '';
+  document.getElementById('field-rollout').value = state.rollout || '';
+
+  updateStatusPill();
+  renderDecisoes();
+  renderArquivos('criados', 'list-criados', 'proposito', 'Propósito');
+  renderArquivos('modificados', 'list-modificados', 'mudanca', 'Mudança');
+  renderArquivos('nao_tocados', 'list-nao-tocados', 'razao', 'Razão');
+  renderRiscos();
+  renderForaEscopo();
+}
+
+function updateStatusPill() {
+  const pill = document.getElementById('status-pill');
+  const s = state.status || 'rascunho';
+  pill.textContent = s;
+  pill.className = 'status-pill status-' + s;
+}
+
+function renderDecisoes() {
+  const container = document.getElementById('list-decisoes');
+  container.innerHTML = '';
+  state.decisoes_tecnicas.forEach((d, idx) => {
+    const row = document.createElement('div');
+    row.className = 'decision-row';
+    const alternativas = (d.alternativas || []).join(', ');
+    row.innerHTML = `
+      <textarea data-dec-decisao="${idx}" placeholder="Decisão">${escapeText(d.decisao)}</textarea>
+      <textarea data-dec-escolha="${idx}" placeholder="Escolha&#10;(alternativas separadas por vírgula)">${escapeText(d.escolha)}${alternativas ? '\n\nAlternativas: ' + alternativas : ''}</textarea>
+      <textarea data-dec-porque="${idx}" placeholder="Por quê">${escapeText(d.por_que)}</textarea>
+      <button class="icon-btn" data-remove="decisao" data-idx="${idx}" title="Remover">×</button>`;
+    container.appendChild(row);
+  });
+}
+
+function renderArquivos(kind, elId, descField, descPlaceholder) {
+  const container = document.getElementById(elId);
+  container.innerHTML = '';
+  state.arquivos[kind].forEach((f, idx) => {
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.innerHTML = `
+      <input type="text" name="caminho" value="${escapeAttr(f.caminho)}" data-file-kind="${kind}" data-file-field="caminho" data-idx="${idx}" placeholder="src/caminho/arquivo.ext">
+      <input type="text" value="${escapeAttr(f[descField])}" data-file-kind="${kind}" data-file-field="${descField}" data-idx="${idx}" placeholder="${descPlaceholder}">
+      <button class="icon-btn" data-remove="file_${kind}" data-idx="${idx}" title="Remover">×</button>`;
+    container.appendChild(row);
+  });
+}
+
+function renderRiscos() {
+  const container = document.getElementById('list-riscos');
+  container.innerHTML = '';
+  state.riscos.forEach((r, idx) => {
+    const row = document.createElement('div');
+    row.className = 'pair-row';
+    row.innerHTML = `
+      <input type="text" value="${escapeAttr(r.risco)}" data-risco-r="${idx}" placeholder="Risco">
+      <input type="text" value="${escapeAttr(r.mitigacao)}" data-risco-m="${idx}" placeholder="Mitigação">
+      <button class="icon-btn" data-remove="risco" data-idx="${idx}" title="Remover">×</button>`;
+    container.appendChild(row);
+  });
+}
+
+function renderForaEscopo() {
+  const ul = document.getElementById('list-fora-escopo');
+  ul.innerHTML = '';
+  state.fora_escopo_tecnico.forEach((item, idx) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <input type="text" value="${escapeAttr(item)}" data-fe="${idx}">
+      <div class="row-actions"><button class="icon-btn" data-remove="fora_escopo" data-idx="${idx}" title="Remover">×</button></div>`;
+    ul.appendChild(li);
+  });
+}
+
+function escapeAttr(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function escapeText(s) { return String(s || '').replace(/</g, '&lt;'); }
+
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.id === 'field-status') { state.status = t.value; updateStatusPill(); return; }
+  if (t.id === 'field-baseado') { state.baseado_em_spec_de = t.value; return; }
+  if (t.id === 'field-abordagem') { state.abordagem = t.value; return; }
+  if (t.id === 'field-estrutura') { state.estrutura_dados = t.value; return; }
+  if (t.id === 'field-fluxo') { state.fluxo_principal = t.value; return; }
+  if (t.id === 'field-performance') { state.consideracoes.performance = t.value; return; }
+  if (t.id === 'field-a11y') { state.consideracoes.acessibilidade = t.value; return; }
+  if (t.id === 'field-seguranca') { state.consideracoes.seguranca = t.value; return; }
+  if (t.id === 'field-i18n') { state.consideracoes.i18n = t.value; return; }
+  if (t.id === 'field-testes') { state.testes = t.value; return; }
+  if (t.id === 'field-rollout') { state.rollout = t.value; return; }
+
+  // Decisões
+  if (t.dataset.decDecisao !== undefined) { state.decisoes_tecnicas[parseInt(t.dataset.decDecisao)].decisao = t.value; return; }
+  if (t.dataset.decEscolha !== undefined) {
+    // Permite formato "Escolha\n\nAlternativas: a, b, c" — split simples.
+    const idx = parseInt(t.dataset.decEscolha);
+    const val = t.value;
+    const altMatch = val.match(/Alternativas:\s*(.+)$/s);
+    if (altMatch) {
+      state.decisoes_tecnicas[idx].escolha = val.replace(/\n*Alternativas:.+$/s, '').trim();
+      state.decisoes_tecnicas[idx].alternativas = altMatch[1].split(',').map(x => x.trim()).filter(Boolean);
+    } else {
+      state.decisoes_tecnicas[idx].escolha = val;
+      state.decisoes_tecnicas[idx].alternativas = [];
+    }
+    return;
+  }
+  if (t.dataset.decPorque !== undefined) { state.decisoes_tecnicas[parseInt(t.dataset.decPorque)].por_que = t.value; return; }
+
+  // Arquivos
+  if (t.dataset.fileKind && t.dataset.fileField) {
+    const kind = t.dataset.fileKind;
+    const field = t.dataset.fileField;
+    const idx = parseInt(t.dataset.idx);
+    state.arquivos[kind][idx][field] = t.value;
+    return;
+  }
+
+  // Riscos
+  if (t.dataset.riscoR !== undefined) { state.riscos[parseInt(t.dataset.riscoR)].risco = t.value; return; }
+  if (t.dataset.riscoM !== undefined) { state.riscos[parseInt(t.dataset.riscoM)].mitigacao = t.value; return; }
+
+  // Fora escopo
+  if (t.dataset.fe !== undefined) { state.fora_escopo_tecnico[parseInt(t.dataset.fe)] = t.value; return; }
+});
+
+document.addEventListener('click', (e) => {
+  const t = e.target;
+
+  if (t.tagName === 'H2') { t.parentElement.classList.toggle('collapsed'); return; }
+
+  if (t.dataset.add) {
+    const kind = t.dataset.add;
+    if (kind === 'decisao') state.decisoes_tecnicas.push({ decisao: '', escolha: '', alternativas: [], por_que: '' });
+    else if (kind === 'criado') state.arquivos.criados.push({ caminho: '', proposito: '' });
+    else if (kind === 'modificado') state.arquivos.modificados.push({ caminho: '', mudanca: '' });
+    else if (kind === 'nao_tocado') state.arquivos.nao_tocados.push({ caminho: '', razao: '' });
+    else if (kind === 'risco') state.riscos.push({ risco: '', mitigacao: '' });
+    else if (kind === 'fora_escopo') state.fora_escopo_tecnico.push('');
+    render();
+    return;
+  }
+
+  if (t.dataset.remove) {
+    const idx = parseInt(t.dataset.idx);
+    const kind = t.dataset.remove;
+    if (kind === 'decisao') state.decisoes_tecnicas.splice(idx, 1);
+    else if (kind === 'file_criados') state.arquivos.criados.splice(idx, 1);
+    else if (kind === 'file_modificados') state.arquivos.modificados.splice(idx, 1);
+    else if (kind === 'file_nao_tocados') state.arquivos.nao_tocados.splice(idx, 1);
+    else if (kind === 'risco') state.riscos.splice(idx, 1);
+    else if (kind === 'fora_escopo') state.fora_escopo_tecnico.splice(idx, 1);
+    render();
+    return;
+  }
+});
+
+function cleanState() {
+  state.decisoes_tecnicas = state.decisoes_tecnicas.filter(d => d.decisao || d.escolha || d.por_que);
+  state.arquivos.criados = state.arquivos.criados.filter(f => f.caminho);
+  state.arquivos.modificados = state.arquivos.modificados.filter(f => f.caminho);
+  state.arquivos.nao_tocados = state.arquivos.nao_tocados.filter(f => f.caminho);
+  state.riscos = state.riscos.filter(r => r.risco || r.mitigacao);
+  state.fora_escopo_tecnico = state.fora_escopo_tecnico.filter(x => x && x.trim());
+}
+
+document.getElementById('btn-save').addEventListener('click', () => {
+  cleanState();
+  const html = serializeHTML();
+  downloadFile(`plan-${state.feature_id || 'sem-id'}.html`, html);
+  toast('HTML baixado. Substitua o arquivo no projeto.');
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  cleanState();
+  navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+  toast('JSON copiado para o clipboard.');
+});
+
+document.getElementById('btn-view-json').addEventListener('click', () => {
+  cleanState();
+  document.getElementById('json-display').value = JSON.stringify(state, null, 2);
+  document.getElementById('modal-json').classList.add('open');
+});
+
+function closeModal() { document.getElementById('modal-json').classList.remove('open'); }
+function copyJson() {
+  const ta = document.getElementById('json-display');
+  ta.select();
+  navigator.clipboard.writeText(ta.value);
+  toast('Copiado.');
+}
+
+function serializeHTML() {
+  const json = JSON.stringify(state, null, 2);
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelectorAll('input[type="text"], textarea').forEach(el => {
+    el.setAttribute('value', '');
+    if (el.tagName === 'TEXTAREA') el.textContent = '';
+  });
+  ['list-decisoes','list-criados','list-modificados','list-nao-tocados','list-riscos','list-fora-escopo'].forEach(id => {
+    const el = clone.querySelector('#' + id);
+    if (el) el.innerHTML = '';
+  });
+  const pill = clone.querySelector('#status-pill');
+  if (pill) { pill.textContent = ''; pill.className = 'status-pill'; }
+  const fid = clone.querySelector('#feature-id-display');
+  if (fid) fid.textContent = '';
+  const modal = clone.querySelector('#modal-json');
+  if (modal) modal.classList.remove('open');
+  const dataScript = clone.querySelector('#plan-data');
+  if (dataScript) dataScript.textContent = '\n' + json + '\n';
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+document.getElementById('modal-json').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-json') closeModal();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "plan.schema.json",
+  "title": "Plan",
+  "type": "object",
+  "required": ["feature_id", "status", "abordagem"],
+  "properties": {
+    "feature_id": {
+      "type": "string",
+      "pattern": "^[0-9]{3}-[a-z][a-z0-9-]*$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["rascunho", "aprovado"]
+    },
+    "baseado_em_spec_de": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da versão da spec usada como base"
+    },
+    "abordagem": {
+      "type": "string",
+      "description": "2–4 parágrafos de estratégia técnica em alto nível"
+    },
+    "decisoes_tecnicas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["decisao", "escolha", "por_que"],
+        "properties": {
+          "decisao": { "type": "string" },
+          "escolha": { "type": "string" },
+          "alternativas": { "type": "array", "items": { "type": "string" } },
+          "por_que": { "type": "string" }
+        }
+      }
+    },
+    "arquivos": {
+      "type": "object",
+      "properties": {
+        "criados": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["caminho", "proposito"],
+            "properties": {
+              "caminho": { "type": "string" },
+              "proposito": { "type": "string" }
+            }
+          }
+        },
+        "modificados": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["caminho", "mudanca"],
+            "properties": {
+              "caminho": { "type": "string" },
+              "mudanca": { "type": "string" }
+            }
+          }
+        },
+        "nao_tocados": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["caminho", "razao"],
+            "properties": {
+              "caminho": { "type": "string" },
+              "razao": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "estrutura_dados": {
+      "type": "string",
+      "description": "Schema, tipos, interfaces. Pode incluir blocos de código."
+    },
+    "fluxo_principal": {
+      "type": "string",
+      "description": "Sequência numerada ou ASCII art"
+    },
+    "consideracoes": {
+      "type": "object",
+      "properties": {
+        "performance": { "type": "string" },
+        "acessibilidade": { "type": "string" },
+        "seguranca": { "type": "string" },
+        "i18n": { "type": "string" }
+      }
+    },
+    "testes": { "type": "string" },
+    "riscos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["risco", "mitigacao"],
+        "properties": {
+          "risco": { "type": "string" },
+          "mitigacao": { "type": "string" }
+        }
+      }
+    },
+    "rollout": { "type": "string" },
+    "fora_escopo_tecnico": { "type": "array", "items": { "type": "string" } }
+  }
+}

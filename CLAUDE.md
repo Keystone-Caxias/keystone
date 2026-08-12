@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Greenfield repository: no stack, manifest, build system, tests, or linting exist yet. Do not assume a language, framework, or package manager — ask before introducing one. Once a stack is chosen, add the build/test/lint commands and any style rules that differ from language defaults to this file.
+Greenfield repository: no application stack, manifest, build system, tests, or linting exist yet. Do not assume a language, framework, or package manager — ask before introducing one. Once a stack is chosen, add the build/test/lint commands and any style rules that differ from language defaults to this file.
+
+Database: PostgreSQL 18, decided in `.claude/specs/current/001-modelagem-banco-dados/`. Local instance (`/Library/PostgreSQL/18`, port 5432) is used for development and schema validation; Supabase (managed Postgres) is the production target — same engine, so DDL validated locally is portable. No migrations or schema exist yet — the spec defines entities only, not DDL.
+
+Specs live in `.claude/specs/` (spec-driven-dev workflow — see `.claude/skills/spec-driven-dev/SKILL.md`).
 
 ## Licensing
 
