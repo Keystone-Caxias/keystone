@@ -1,0 +1,9 @@
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--surface-page);color:var(--text-body);font-family:var(--font-body);font-size:var(--fs-sm);line-height:var(--lh-normal);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+h1,h2,h3,h4{font-family:var(--font-display);color:var(--text-strong);font-weight:var(--fw-medium);letter-spacing:var(--ls-display);line-height:var(--lh-tight);margin:0}
+h1{font-size:var(--fs-3xl)}h2{font-size:var(--fs-2xl)}h3{font-size:var(--fs-xl)}h4{font-size:var(--fs-lg)}
+p{margin:0}
+a{color:var(--text-link);text-decoration:none;border-bottom:1px solid color-mix(in oklab,var(--text-link) 35%,transparent);transition:var(--transition-base)}
+a:hover{color:var(--text-link-hover);border-bottom-color:color-mix(in oklab,var(--text-link-hover) 55%,transparent)}
+.eyebrow{font-family:var(--font-body);font-size:var(--fs-3xs);font-weight:var(--fw-semibold);letter-spacing:var(--ls-caps);text-transform:uppercase;color:var(--text-muted)}
+.numeric{font-family:var(--font-mono);font-variant-numeric:tabular-nums}

@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# environment
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# supabase (local CLI state)
+supabase/.branches
+supabase/.temp
+
+# brand asset under a third-party (Getty Images / iStock) licence: keep it local, never commit
+public/keystone.jpg
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Tela interna" description="Layout base da plataforma: sidebar navy, topbar e área de conteúdo com cartões." -->
+<helmet><script src="./ds-base.js"></script><style>html,body{margin:0;height:100%}#root{height:100%}</style></helmet>
+<div style="display:flex;height:100vh;font-family:var(--font-body);background:var(--surface-page);color:var(--text-body)">
+<aside style="width:264px;flex:0 0 auto;background:var(--surface-navy);display:flex;flex-direction:column;position:relative;overflow:hidden">
+<img src="../../assets/keystone.jpg" alt="" style="position:absolute;bottom:-30px;left:-40px;width:260px;filter:invert(1);opacity:.06;mix-blend-mode:screen" />
+<div style="display:flex;gap:10px;align-items:center;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.10)">
+<img src="../../assets/keystone.jpg" alt="" style="width:26px;filter:invert(1);mix-blend-mode:screen" />
+<div style="line-height:1.1">
+<div style="font-family:var(--font-display);font-size:18px;color:var(--neutral-0)">Ordens Inglesas</div>
+<div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-300)">Controle interno</div>
+</div>
+</div>
+<nav style="display:grid;gap:2px;padding:16px 10px">
+<a href="#" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;font-size:14px;text-decoration:none;border-bottom:0;background:rgba(255,255,255,.10);color:var(--neutral-0);border-left:2px solid var(--gold-400)">Painel</a>
+<a href="#" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;font-size:14px;text-decoration:none;border-bottom:0;color:rgba(250,248,244,.72);border-left:2px solid transparent">Cadastro de irmãos</a>
+<a href="#" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;font-size:14px;text-decoration:none;border-bottom:0;color:rgba(250,248,244,.72);border-left:2px solid transparent">Admissões</a>
+<a href="#" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;font-size:14px;text-decoration:none;border-bottom:0;color:rgba(250,248,244,.72);border-left:2px solid transparent">Tesouraria</a>
+</nav>
+</aside>
+<main style="flex:1;min-width:0;display:flex;flex-direction:column">
+<header style="min-height:60px;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--surface-card);border-bottom:1px solid var(--border-default)">
+<div style="flex:1;display:grid;gap:1px">
+<span style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Capítulo 12 · Recife</span>
+<h3 style="margin:0;font-family:var(--font-display);font-size:22px;color:var(--text-strong);font-weight:500">Título da tela</h3>
+</div>
+<x-import component-from-global-scope="OrdensInglesasDesignSystem_d5c0a9.Button" variant="secondary" size="sm" hint-size="120px,36px">Exportar</x-import>
+<x-import component-from-global-scope="OrdensInglesasDesignSystem_d5c0a9.Button" size="sm" iconLeft="plus" hint-size="140px,36px">Novo registro</x-import>
+</header>
+<div style="flex:1;overflow:auto;padding:24px;display:grid;gap:24px;align-content:start;grid-template-columns:1.6fr 1fr">
+<x-import component-from-global-scope="OrdensInglesasDesignSystem_d5c0a9.Card" eyebrow="Seção" title="Conteúdo principal" hint-size="100%,220px">
+<p style="margin:0;font-size:14px;color:var(--text-muted)">Substitua por tabela, formulário ou lista. Cartão: papel branco, filete de 1px, raio 6px, sombra 1.</p>
+</x-import>
+<x-import component-from-global-scope="OrdensInglesasDesignSystem_d5c0a9.Card" eyebrow="Apoio" title="Coluna lateral" accent="marca" hint-size="100%,220px">
+<p style="margin:0;font-size:14px;color:var(--text-muted)">Cartões de apoio recebem régua superior de 2px na cor da Ordem.</p>
+</x-import>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,29 @@
+:root{
+/* Escala tipográfica (base 16px, razão ~1.22) */
+--fs-3xs:11px;
+--fs-2xs:12px;
+--fs-xs:13px;
+--fs-sm:14px;
+--fs-md:16px;
+--fs-lg:18px;
+--fs-xl:22px;
+--fs-2xl:27px;
+--fs-3xl:33px;
+--fs-4xl:44px;
+--fs-5xl:58px;
+
+--lh-tight:1.12; /* @kind font */
+--lh-snug:1.28; /* @kind font */
+--lh-normal:1.5; /* @kind font */
+--lh-loose:1.65; /* @kind font */
+
+--fw-regular:400; /* @kind font */
+--fw-medium:500; /* @kind font */
+--fw-semibold:600; /* @kind font */
+
+/* Entreletras — versaletes institucionais usam tracking aberto */
+--ls-display:-0.01em; /* @kind font */
+--ls-normal:0; /* @kind font */
+--ls-wide:0.04em; /* @kind font */
+--ls-caps:0.14em; /* @kind font */
+}

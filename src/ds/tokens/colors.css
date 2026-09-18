@@ -1,0 +1,54 @@
+:root{
+/* Neutros — papel/tinta, levemente quentes */
+--neutral-0:#ffffff;
+--neutral-25:#faf8f4;
+--neutral-50:#f4f1ea;
+--neutral-100:#e9e4d9;
+--neutral-200:#d9d2c4;
+--neutral-300:#b9b0a0;
+--neutral-400:#8e8677;
+--neutral-500:#6b6559;
+--neutral-600:#4d4840;
+--neutral-700:#33302b;
+--neutral-800:#22201d;
+--neutral-900:#141311;
+
+/* Carmim — Arco Real (grau capitular) */
+--crimson-50:#fbeef0;
+--crimson-100:#f4d6da;
+--crimson-300:#c8566a;
+--crimson-400:#b23349;
+--crimson-500:#9e1b32;
+--crimson-600:#7d1427;
+--crimson-700:#5c0e1c;
+
+/* Ouro — Mestre Maçom da Marca (a chave) */
+--gold-50:#faf3e2;
+--gold-100:#f1e3c2;
+--gold-300:#d9b96e;
+--gold-400:#c9a44f;
+--gold-500:#b58a3c;
+--gold-600:#8f6b28;
+--gold-700:#684d1a;
+
+/* Azul-marinho — Nautas da Arca Real */
+--navy-50:#eceff6;
+--navy-100:#d3daea;
+--navy-300:#5b7399;
+--navy-400:#33517c;
+--navy-500:#1c3557;
+--navy-600:#142740;
+--navy-700:#0d1a2c;
+
+/* Verdete — confirmação/quitação */
+--verde-50:#e9f1ec;
+--verde-300:#5b9375;
+--verde-500:#2f6b4f;
+--verde-600:#22513c;
+
+/* Âmbar e vermelho de alerta */
+--ambar-50:#fdf3e0;
+--ambar-500:#a97817;
+--vermelho-50:#fbeaea;
+--vermelho-500:#a32020;
+}

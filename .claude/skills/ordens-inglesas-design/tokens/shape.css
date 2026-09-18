@@ -1,0 +1,24 @@
+:root{
+/* Cantos discretos — nada de pílulas, exceto etiquetas de estado */
+--radius-0:0px;
+--radius-1:2px;
+--radius-2:4px;
+--radius-3:6px;
+--radius-4:8px;
+--radius-5:12px;
+--radius-pill:999px;
+
+--border-width:1px;
+--border-width-thick:2px;
+--border-hairline:1px solid var(--neutral-200);
+--border-strong:1px solid var(--neutral-300);
+--rule-ornament:1px solid var(--gold-400);
+
+/* Elevação — sombras curtas e frias, quase impressas */
+--shadow-0:none;
+--shadow-1:0 1px 2px rgba(20,19,17,.06);
+--shadow-2:0 1px 3px rgba(20,19,17,.08),0 4px 12px rgba(20,19,17,.05);
+--shadow-3:0 8px 28px rgba(20,19,17,.12);
+--shadow-inset:inset 0 1px 0 rgba(255,255,255,.5);
+--focus-ring:0 0 0 3px rgba(28,53,87,.22);
+}

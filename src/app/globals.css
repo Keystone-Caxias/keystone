@@ -1,0 +1,9 @@
+html, body { height: 100%; }
+
+/* As três famílias vêm de next/font (auto-hospedadas); os tokens do design system
+   apontam para elas via estas variáveis, mantendo tokens/*.css intactos. */
+:root {
+  --font-display: var(--font-garamond), "Iowan Old Style", Georgia, serif;
+  --font-body: var(--font-plex-sans), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
