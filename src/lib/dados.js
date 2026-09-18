@@ -20,7 +20,7 @@ export function normalizarIrmao(r) {
 }
 
 function falha(acao, error) {
-  return new Error(`Falha ao ${acao}: ${error.message}`);
+  return new Error(`Falha ao ${acao}: ${error.message || error.details || error.code || 'erro desconhecido'}`);
 }
 
 export async function listarIrmaos(supabase) {
