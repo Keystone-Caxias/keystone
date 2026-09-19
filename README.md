@@ -20,15 +20,27 @@ Plataforma interna de **cadastro de irmãos, lojas simbólicas e registros de Ar
 
 ## Rodar localmente
 
-Pré-requisitos: Node 20+ e um projeto no Supabase.
+Pré-requisitos: Node 20+ e Docker (para o Supabase local).
 
 ```bash
 npm install
-cp .env.example .env.local   # preencha com a URL e a chave pública do projeto
+npm run db:start             # sobe Postgres + Auth locais e aplica migrations e seed
+cp .env.example .env.local   # use a URL e a chave que o db:start imprime (API URL / anon key)
 npm run dev                  # http://localhost:3000
 ```
 
-Sem `.env.local` o app sobe e mostra a tela "Configuração pendente".
+`npm run db:start` imprime, entre outros, `API URL` (`http://127.0.0.1:54321`) e `anon key`; coloque-os em `.env.local`. Para criar o primeiro usuário local, abra o Studio em <http://127.0.0.1:54323> (Authentication → Users → Add user) ou use a API de admin com a `service_role key` impressa pelo mesmo comando:
+
+```bash
+curl -X POST http://127.0.0.1:54321/auth/v1/admin/users \
+  -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"escriba@keystone.local","password":"keystone123","email_confirm":true}'
+```
+
+`npm run db:stop` derruba os contêineres; `npm run db:reset` recria o banco do zero (migrations + seed). Sem `.env.local` o app sobe e mostra a tela "Configuração pendente".
+
+Para apontar para um projeto hospedado em vez do local, siga a seção seguinte.
 
 ## Configurar o Supabase
 
@@ -54,6 +66,8 @@ Sem `.env.local` o app sobe e mostra a tela "Configuração pendente".
 | `npm run dev` | Servidor de desenvolvimento |
 | `npm run build` / `npm start` | Build de produção e servidor |
 | `npm run lint` | ESLint (regras do Next) |
+| `npm run db:start` / `npm run db:stop` | Supabase local via Docker (migrations e seed aplicados ao subir) |
+| `npm run db:reset` | Recria o banco local do zero |
 | `npm run db:push` | Aplica as migrations no projeto Supabase vinculado (requer `supabase link`) |
 
 ## Estrutura
