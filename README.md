@@ -96,6 +96,10 @@ supabase/           migrations e seed
 .claude/specs/      specs (spec-driven development)
 ```
 
+## Contribuir
+
+Branches, commits e pull requests seguem as regras de [`CONTRIBUTING.md`](CONTRIBUTING.md): a `main` é a produção, todo trabalho entra por PR a partir de uma branch `<tipo>/<descricao>`.
+
 ## Emblema
 
 O emblema da chave de abóbada (`assets/keystone.jpg` no Claude Design) é uma ilustração licenciada pela Getty Images / iStock e por isso **não é versionado**. Coloque o arquivo em `public/keystone.jpg` no seu ambiente e na Vercel (por exemplo, via um bucket público ou commit em repositório privado). Sem ele, o app mostra um glifo SVG no lugar.
