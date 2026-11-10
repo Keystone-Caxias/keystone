@@ -31,8 +31,15 @@ Licensed under GPL-3.0 (`LICENSE`). Any dependency added must be GPLv3-compatibl
 
 ## Git conventions
 
-- Commit messages follow Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-- Never commit directly to `main`. Create a branch and open a PR.
+Full rules in `CONTRIBUTING.md` (Portuguese). Summary:
+
+- `main` is the only long-lived branch and is what Vercel deploys to production. No `develop` or release branches; each PR's Vercel preview is the staging environment.
+- Never commit or push directly to `main`. Branch from an up-to-date `main` and open a PR, including for docs and urgent fixes.
+- Branch names: `<type>/<short-kebab-description>` with type `feat`, `fix`, `docs`, `refactor`, `test` or `chore`. Rename auto-generated names (`claude/...`) before opening the PR.
+- Commit messages and PR titles follow Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), optional scope, lowercase imperative summary.
+- Before opening a PR run `npm run lint` and `npm run build` (plus `npm run db:reset` when it has a migration) and fill in `.github/pull_request_template.md`.
+- PRs are merged with a merge commit (no squash, no rebase merge) and the branch is deleted afterwards. A person reviews agent-written work before merge.
+- Never rewrite `main` history; undo with `git revert` in a PR.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

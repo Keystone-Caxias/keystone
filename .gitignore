@@ -20,6 +20,10 @@ supabase/.temp
 # brand asset under a third-party (Getty Images / iStock) licence: keep it local, never commit
 public/keystone.jpg
 
+# python (scripts das skills)
+__pycache__/
+*.pyc
+
 # misc
 .DS_Store
 *.log
