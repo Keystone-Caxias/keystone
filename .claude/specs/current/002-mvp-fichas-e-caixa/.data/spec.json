@@ -1,0 +1,219 @@
+{
+  "feature_id": "002-mvp-fichas-e-caixa",
+  "status": "esclarecendo",
+  "criada_em": "2026-11-10",
+  "autor": "",
+  "dominio": "admin",
+  "tags": [
+    "mvp",
+    "tesouraria",
+    "caixa",
+    "fichas",
+    "relatorios",
+    "impressao"
+  ],
+  "objetivo": "Fechar um MVP utilizável da plataforma: além do cadastro de irmãos e lojas que já existe, o oficial emite fichas preenchidas para impressão (cadastral e por Ordem) e controla o caixa de cada Ordem (entradas, saídas e saldo), com relatórios imprimíveis.",
+  "motivacao": "O cadastro já funciona, mas as rotinas que tomam tempo dos oficiais (preencher ficha à mão, manter o livro-caixa de cada Ordem em planilha) continuam fora do sistema. Um MVP funcionando dá aos três irmãos responsáveis algo concreto para avaliar e para debater as regras de negócio ainda em aberto, em vez de discutir no abstrato.",
+  "escopo": {
+    "inclui": [
+      "Caixa por Ordem (Arco Real, Marca, Nautas): registrar entradas e saídas com data, valor, categoria, descrição e irmão vinculado (opcional); editar e excluir lançamento",
+      "Saldo de cada Ordem calculado pelo sistema (entradas menos saídas), com saldo anterior, entradas, saídas e saldo final do período escolhido",
+      "Filtros da Tesouraria: Ordem, período (de/até), tipo (entrada/saída), categoria e busca por texto",
+      "Categorias do caixa mantidas pelos próprios oficiais na tela Ajustes (lista inicial provisória)",
+      "Registro de quem lançou cada movimento (e-mail do oficial) e quando",
+      "Ficha cadastral do irmão e ficha de registro por Ordem, preenchidas com os dados do cadastro e prontas para imprimir em A4 (ou salvar em PDF pelo navegador); campo sem valor sai como linha em branco para preenchimento à mão",
+      "Relatórios imprimíveis: fichas em lote de todos os irmãos de uma Ordem, quadro de irmãos por Ordem e extrato do caixa por Ordem e período (com saldo acumulado)",
+      "Painel: saldo atual do caixa de cada Ordem",
+      "Proteção dos dados financeiros: irmão com lançamentos vinculados não pode ser excluído do cadastro"
+    ],
+    "nao_inclui": [
+      "Fluxo de admissão (proposta, etapas, aprovação): a tela Admissões continua em definição",
+      "Cobrança de anuidades, controle de inadimplência e avisos por e-mail",
+      "Emissão de recibo numerado",
+      "Anexo de comprovantes e upload de foto (a foto segue como URL)",
+      "Perfis de acesso por cargo ou por Ordem (todo oficial autenticado continua com acesso total)",
+      "Reprodução fiel dos formulários oficiais de cada Ordem (depende dos modelos, ver perguntas em aberto)",
+      "Fechamento de período, prestação de contas formal e conciliação bancária"
+    ]
+  },
+  "criterios_aceitacao": [
+    {
+      "texto": "Em Tesouraria, o oficial registra uma entrada e uma saída para uma Ordem e as duas aparecem na lista da Ordem e do período corretos",
+      "atendido": false
+    },
+    {
+      "texto": "Os valores de saldo anterior, entradas, saídas e saldo final de cada Ordem batem com a soma dos lançamentos, inclusive quando o período tem mais de 1000 lançamentos",
+      "atendido": false
+    },
+    {
+      "texto": "Um lançamento pode ser editado e excluído (com confirmação); o saldo reflete a mudança em seguida",
+      "atendido": false
+    },
+    {
+      "texto": "Valor aceita digitação no padrão brasileiro (1.240,50) e é exibido como R$ 1.240,50; valor zero, negativo ou inválido é recusado com mensagem",
+      "atendido": false
+    },
+    {
+      "texto": "Quando o salvamento de um formulário (lançamento, irmão, loja, categoria) devolve erro, o que foi digitado permanece na tela",
+      "atendido": false
+    },
+    {
+      "texto": "A categoria oferecida no lançamento depende do tipo (entrada ou saída) e o banco recusa categoria de tipo diferente",
+      "atendido": false
+    },
+    {
+      "texto": "Em Ajustes, o oficial cria, renomeia e exclui categorias; categoria já usada em lançamento não pode ser excluída e a tela explica o motivo",
+      "atendido": false
+    },
+    {
+      "texto": "A partir do cadastro de um irmão, o oficial abre a ficha cadastral e a ficha de cada Ordem, e a impressão sai em A4 sem menu lateral nem botões",
+      "atendido": false
+    },
+    {
+      "texto": "Na ficha de uma Ordem de que o irmão ainda não participa, os campos da Ordem saem em branco para preenchimento à mão",
+      "atendido": false
+    },
+    {
+      "texto": "Em Relatórios, o oficial emite as fichas de todos os irmãos de uma Ordem (uma por página), o quadro de irmãos de uma Ordem e o extrato do caixa de uma Ordem em um período",
+      "atendido": false
+    },
+    {
+      "texto": "O extrato mostra saldo anterior, cada lançamento com saldo acumulado, totais de entradas e saídas e saldo final",
+      "atendido": false
+    },
+    {
+      "texto": "O Painel mostra o saldo atual do caixa de cada Ordem",
+      "atendido": false
+    },
+    {
+      "texto": "Tentar excluir um irmão que tem lançamentos no caixa mostra uma mensagem clara e não apaga nada",
+      "atendido": false
+    },
+    {
+      "texto": "Sem sessão (chave pública apenas), nenhuma linha das novas tabelas é lida ou gravada",
+      "atendido": false
+    },
+    {
+      "texto": "`npm run db:reset`, `npm run lint` e `npm run build` terminam sem erro",
+      "atendido": false
+    }
+  ],
+  "cenarios": {
+    "feliz": "O Tesoureiro entra, abre Tesouraria, escolhe Arco Real e registra a anuidade paga por um irmão (entrada) e a compra de paramentos (saída). O saldo do Arco Real é atualizado. No fim do mês ele abre Relatórios, emite o extrato do período e imprime. O Escriba abre o cadastro de um irmão, emite a ficha do Arco Real e imprime para arquivo.",
+    "alternativos": [
+      {
+        "situacao": "Não existe categoria adequada para o lançamento",
+        "comportamento": "O oficial cria a categoria em Ajustes (nome e tipo) e ela passa a aparecer no formulário de lançamento"
+      },
+      {
+        "situacao": "Lançamento registrado com valor ou Ordem errados",
+        "comportamento": "O oficial edita ou exclui o lançamento; o saldo é recalculado. (Comportamento provisório, ver pergunta sobre correção de lançamentos.)"
+      },
+      {
+        "situacao": "Implantação: a Ordem já tem dinheiro em caixa antes de usar o sistema",
+        "comportamento": "O oficial registra uma entrada na categoria \"Saldo inicial\" com a data de corte"
+      },
+      {
+        "situacao": "Irmão ainda não pertence à Ordem cuja ficha foi pedida",
+        "comportamento": "A ficha sai com identificação e dados da loja simbólica preenchidos e os campos da Ordem em branco, servindo de ficha de proposta"
+      },
+      {
+        "situacao": "Oficial tenta excluir do cadastro um irmão com lançamentos no caixa",
+        "comportamento": "O sistema recusa e informa que há lançamentos vinculados"
+      },
+      {
+        "situacao": "Período sem lançamentos",
+        "comportamento": "A lista e o extrato informam que não há lançamentos; os saldos anterior e final continuam corretos"
+      }
+    ]
+  },
+  "restricoes": [
+    "Esta spec segue para plano e implementação com perguntas em aberto por pedido explícito do responsável (2026-11-10): o MVP serve de base para o debate entre os três irmãos. Cada pergunta em `precisa_esclarecer` traz o comportamento provisório adotado; a resposta definitiva pode exigir ajuste e vira nova WP ou nova feature",
+    "Nenhuma regra em aberto é fixada em código quando pode ser dado: categorias são cadastro (tela Ajustes), período é filtro livre",
+    "Sem dependência nova: impressão e PDF usam o recurso de imprimir do navegador (licença GPL-3.0, ver CLAUDE.md)",
+    "Texto de interface em português do Brasil conforme as regras de conteúdo do design system (sentence case, sem emoji, dinheiro como R$ 1.240,00, data dd/mm/aaaa)",
+    "Stack e convenções do CLAUDE.md: Next.js 16 App Router em JS, Supabase com RLS, leitura em Server Components, mutação em Server Actions, componentes só de `@/ds`"
+  ],
+  "dependencias": [
+    "001-modelagem-banco-dados (tabelas loja, macom, arco_real, marca, nauta)",
+    "App Next.js + Supabase já existente (login, cadastro de irmãos, lojas)"
+  ],
+  "precisa_esclarecer": [
+    {
+      "pergunta": "ESTRUTURA. O sistema atende um único corpo por Ordem (um Capítulo, uma Loja de Marca, uma Loja de Nautas) ou vários? Provisório no MVP: um caixa por Ordem (três caixas) e o nome do Capítulo/Loja continua texto livre no cadastro de cada irmão. Se houver mais de um corpo por Ordem, caixa, quadro e fichas precisam ser por corpo.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "ACESSO. Quem pode ver e alterar o quê? Provisório no MVP: todo oficial autenticado vê e altera tudo, nas três Ordens (como já era no cadastro). Alternativas: perfis por cargo (Escriba/Secretário x Tesoureiro), acesso por Ordem, perfil somente leitura.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, correção de lançamentos. Um lançamento errado pode ser editado e excluído livremente, ou deve ser corrigido por estorno (o original fica intocado)? Provisório no MVP: edição e exclusão livres; o sistema guarda quem criou e a data da última alteração, mas não o histórico de alterações.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, exercício e fechamento. O exercício financeiro é o ano civil? Existe fechamento (mensal ou anual) depois do qual nada mais pode ser alterado, e prestação de contas formal? Provisório no MVP: sem fechamento; a tela abre no ano civil corrente e o período é um filtro livre.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, saldo inicial. Qual a data de corte e o saldo de abertura de cada Ordem? Provisório no MVP: lançar uma entrada na categoria \"Saldo inicial\".",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, categorias. Quais são as categorias definitivas de entrada e de saída, e são as mesmas para as três Ordens? Provisório no MVP: lista inicial única para as três Ordens, editável em Ajustes. Entradas: Saldo inicial, Anuidade, Joia, Taxa de admissão, Doação, Outras entradas. Saídas: Taxas e repasses, Paramentos e materiais, Aluguel e manutenção, Ágape, Beneficência, Outras saídas.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, dinheiro em espécie x banco. Cada Ordem tem conta bancária própria? É preciso separar caixa físico de conta, ou registrar a forma de pagamento (dinheiro, PIX, transferência)? Provisório no MVP: um único saldo por Ordem, sem forma de pagamento.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "COBRANÇA. O sistema deve controlar o que cada irmão deve (anuidade ou mensalidade por Ordem, valor, vencimento, situação quite/pendente/vencido), como no protótipo do design? Provisório no MVP: só registra o que foi efetivamente recebido e pago; não há previsão nem inadimplência.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "RECIBOS E COMPROVANTES. O sistema deve emitir recibo numerado ao registrar uma entrada (qual a numeração)? Deve guardar o comprovante ou a nota de cada saída? Provisório no MVP: nenhum dos dois.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "IRMÃO QUE SAI. Irmão desligado, licenciado ou falecido deve ser excluído ou marcado com uma situação (por Ordem)? Provisório no MVP: não há situação; exclusão continua possível, exceto quando o irmão tem lançamentos no caixa (aí o sistema bloqueia).",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "FICHAS, modelos. Quais fichas precisam ser emitidas e quais são os modelos oficiais de cada Ordem (campos, assinaturas, brasão)? Provisório no MVP: ficha cadastral completa e uma ficha de registro por Ordem em layout próprio, com os campos que existem no cadastro, sem campos de assinatura. Para reproduzir os formulários oficiais, enviar os modelos.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "FICHAS, campos que faltam. Os modelos oficiais pedem dados que o cadastro não tem (por exemplo profissão, estado civil, naturalidade, RG, número da loja, grau ou cargo, matrícula na Ordem)? Provisório no MVP: nenhum campo novo no cadastro.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "ADMISSÕES. Como é o fluxo de admissão em cada Ordem (etapas, quem aprova, documentos, taxa)? Provisório no MVP: fora do escopo; a tela continua \"em definição\".",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "DADOS PESSOAIS (LGPD). Há termo de consentimento dos irmãos para guardar CPF, endereço e foto? Quem responde pelos dados e por quanto tempo ficam guardados? Provisório no MVP: sem tratamento específico além do acesso restrito a oficiais autenticados.",
+      "resolvido": false,
+      "resposta": ""
+    }
+  ],
+  "fora_escopo": [
+    "Admissões, cobrança de anuidades, recibos, anexos e perfis de acesso (dependem das perguntas em aberto)",
+    "Importação de planilhas existentes e exportação para CSV/Excel",
+    "Envio de e-mails e notificações",
+    "Aplicativo ou layout para celular (a plataforma segue pensada para desktop)"
+  ]
+}

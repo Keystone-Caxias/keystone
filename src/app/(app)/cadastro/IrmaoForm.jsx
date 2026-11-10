@@ -1,13 +1,15 @@
 'use client';
-import { useActionState, useState } from 'react';
+import { useState } from 'react';
 import { Button, Card, Checkbox, Input, Select } from '@/ds';
 import { LinkButton } from '@/components/LinkButton';
+import { useEnvio } from '@/lib/useEnvio';
 import { salvarIrmao } from './actions';
 
 const grade = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' };
 
 export function IrmaoForm({ irmao, lojas }) {
-  const [state, action, pending] = useActionState(salvarIrmao, { erro: null });
+  // useEnvio: se o salvamento devolver erro (CPF repetido, por exemplo), o formulário não é limpo.
+  const [state, enviar, pending] = useEnvio(salvarIrmao);
   const [temAR, setTemAR] = useState(Boolean(irmao?.arco_real));
   const [temMarca, setTemMarca] = useState(Boolean(irmao?.marca));
   const [temNauta, setTemNauta] = useState(Boolean(irmao?.nauta));
@@ -16,7 +18,7 @@ export function IrmaoForm({ irmao, lojas }) {
   const na = irmao?.nauta || {};
 
   return (
-    <form action={action} style={{ display: 'grid', gap: 'var(--space-6)', maxWidth: 'var(--width-form-max)' }}>
+    <form onSubmit={enviar} style={{ display: 'grid', gap: 'var(--space-6)', maxWidth: 'var(--width-form-max)' }}>
       {irmao && <input type="hidden" name="id" value={irmao.id} />}
 
       <Card eyebrow="Identificação" title="Dados básicos">

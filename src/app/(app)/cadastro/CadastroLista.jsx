@@ -55,6 +55,7 @@ function Detalhe({ irmao, onClose }) {
             <div style={{ borderTop: '1px solid var(--border-subtle)' }} />
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button size="sm" iconLeft="pencil" onClick={() => router.push(`/cadastro/${irmao.id}/editar`)}>Editar cadastro</Button>
+              <Button size="sm" variant="secondary" iconLeft="printer" onClick={() => router.push(`/imprimir/ficha/${irmao.id}`)}>Emitir ficha</Button>
             </div>
           </>
         )}
@@ -137,6 +138,7 @@ export function CadastroLista({ irmaos, lojas, mensagem }) {
                 { key: 'data_iniciacao', label: 'Iniciação', numeric: true, render: (r) => formatarData(r.data_iniciacao) },
                 { key: 'acoes', label: '', align: 'right', render: (r) => (
                   <RowActions>
+                    <Tooltip label="Emitir ficha"><IconButton icon="printer" label="Emitir ficha" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/imprimir/ficha/${r.id}`); }} /></Tooltip>
                     <Tooltip label="Editar"><IconButton icon="pencil" label="Editar" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/cadastro/${r.id}/editar`); }} /></Tooltip>
                   </RowActions>
                 ) },

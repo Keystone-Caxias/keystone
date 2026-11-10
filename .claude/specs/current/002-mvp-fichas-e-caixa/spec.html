@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Spec — 002-mvp-fichas-e-caixa</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --bg-elev: #171a21;
+    --bg-input: #1f232c;
+    --border: #2a2f3a;
+    --border-strong: #3a4150;
+    --text: #e6e8ec;
+    --text-dim: #9aa3b2;
+    --accent: #7aa2f7;
+    --accent-soft: rgba(122, 162, 247, 0.12);
+    --ok: #9ece6a;
+    --warn: #e0af68;
+    --danger: #f7768e;
+    --radius: 6px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 32px 20px 120px;
+    line-height: 1.55;
+  }
+  .container { max-width: 880px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  h1 .feature-id {
+    color: var(--text-dim);
+    font-weight: 400;
+    font-family: var(--mono);
+  }
+  .meta {
+    display: flex;
+    gap: 12px;
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .meta label { display: inline-flex; gap: 6px; align-items: center; }
+  .meta input, .meta select {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .status-esclarecendo { background: rgba(224, 175, 104, 0.15); color: var(--warn); }
+  .status-pronto       { background: rgba(158, 206, 106, 0.15); color: var(--ok); }
+
+  section {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  section > h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--bg-input);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  section > h2::after {
+    content: "▾";
+    color: var(--text-dim);
+    font-size: 11px;
+    transition: transform 0.15s;
+  }
+  section.collapsed > h2::after { transform: rotate(-90deg); }
+  section.collapsed > .body { display: none; }
+  .body { padding: 16px; }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  textarea:focus, input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+  textarea.lg { min-height: 90px; }
+
+  ul.editable { list-style: none; padding: 0; margin: 0; }
+  ul.editable li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  ul.editable li > input[type="text"],
+  ul.editable li > textarea { flex: 1; }
+  ul.editable li > input[type="checkbox"] { margin-top: 11px; }
+  .row-actions { display: flex; gap: 4px; }
+  button.icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+  button.icon-btn:hover { background: var(--bg-input); color: var(--text); }
+  button.add-btn {
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    color: var(--text-dim);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    margin-top: 4px;
+  }
+  button.add-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .pair-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .empty-hint { color: var(--text-dim); font-size: 13px; font-style: italic; }
+
+  .toolbar {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 8px 12px;
+    display: flex;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 100;
+  }
+  .toolbar button {
+    background: var(--bg-input);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .toolbar button.primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+  .toolbar button:hover { filter: brightness(1.15); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 720px;
+    width: 90vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal h3 { margin: 0 0 12px; font-size: 16px; }
+  .modal textarea {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 12px;
+    min-height: 300px;
+  }
+  .modal-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--ok);
+    color: var(--bg);
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s;
+    z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Fonte da verdade: este JSON é o que a IA lê e escreve. -->
+<script type="application/json" id="spec-data">
+{
+  "feature_id": "002-mvp-fichas-e-caixa",
+  "status": "esclarecendo",
+  "criada_em": "2026-11-10",
+  "autor": "",
+  "dominio": "admin",
+  "tags": [
+    "mvp",
+    "tesouraria",
+    "caixa",
+    "fichas",
+    "relatorios",
+    "impressao"
+  ],
+  "objetivo": "Fechar um MVP utilizável da plataforma: além do cadastro de irmãos e lojas que já existe, o oficial emite fichas preenchidas para impressão (cadastral e por Ordem) e controla o caixa de cada Ordem (entradas, saídas e saldo), com relatórios imprimíveis.",
+  "motivacao": "O cadastro já funciona, mas as rotinas que tomam tempo dos oficiais (preencher ficha à mão, manter o livro-caixa de cada Ordem em planilha) continuam fora do sistema. Um MVP funcionando dá aos três irmãos responsáveis algo concreto para avaliar e para debater as regras de negócio ainda em aberto, em vez de discutir no abstrato.",
+  "escopo": {
+    "inclui": [
+      "Caixa por Ordem (Arco Real, Marca, Nautas): registrar entradas e saídas com data, valor, categoria, descrição e irmão vinculado (opcional); editar e excluir lançamento",
+      "Saldo de cada Ordem calculado pelo sistema (entradas menos saídas), com saldo anterior, entradas, saídas e saldo final do período escolhido",
+      "Filtros da Tesouraria: Ordem, período (de/até), tipo (entrada/saída), categoria e busca por texto",
+      "Categorias do caixa mantidas pelos próprios oficiais na tela Ajustes (lista inicial provisória)",
+      "Registro de quem lançou cada movimento (e-mail do oficial) e quando",
+      "Ficha cadastral do irmão e ficha de registro por Ordem, preenchidas com os dados do cadastro e prontas para imprimir em A4 (ou salvar em PDF pelo navegador); campo sem valor sai como linha em branco para preenchimento à mão",
+      "Relatórios imprimíveis: fichas em lote de todos os irmãos de uma Ordem, quadro de irmãos por Ordem e extrato do caixa por Ordem e período (com saldo acumulado)",
+      "Painel: saldo atual do caixa de cada Ordem",
+      "Proteção dos dados financeiros: irmão com lançamentos vinculados não pode ser excluído do cadastro"
+    ],
+    "nao_inclui": [
+      "Fluxo de admissão (proposta, etapas, aprovação): a tela Admissões continua em definição",
+      "Cobrança de anuidades, controle de inadimplência e avisos por e-mail",
+      "Emissão de recibo numerado",
+      "Anexo de comprovantes e upload de foto (a foto segue como URL)",
+      "Perfis de acesso por cargo ou por Ordem (todo oficial autenticado continua com acesso total)",
+      "Reprodução fiel dos formulários oficiais de cada Ordem (depende dos modelos, ver perguntas em aberto)",
+      "Fechamento de período, prestação de contas formal e conciliação bancária"
+    ]
+  },
+  "criterios_aceitacao": [
+    {
+      "texto": "Em Tesouraria, o oficial registra uma entrada e uma saída para uma Ordem e as duas aparecem na lista da Ordem e do período corretos",
+      "atendido": false
+    },
+    {
+      "texto": "Os valores de saldo anterior, entradas, saídas e saldo final de cada Ordem batem com a soma dos lançamentos, inclusive quando o período tem mais de 1000 lançamentos",
+      "atendido": false
+    },
+    {
+      "texto": "Um lançamento pode ser editado e excluído (com confirmação); o saldo reflete a mudança em seguida",
+      "atendido": false
+    },
+    {
+      "texto": "Valor aceita digitação no padrão brasileiro (1.240,50) e é exibido como R$ 1.240,50; valor zero, negativo ou inválido é recusado com mensagem",
+      "atendido": false
+    },
+    {
+      "texto": "Quando o salvamento de um formulário (lançamento, irmão, loja, categoria) devolve erro, o que foi digitado permanece na tela",
+      "atendido": false
+    },
+    {
+      "texto": "A categoria oferecida no lançamento depende do tipo (entrada ou saída) e o banco recusa categoria de tipo diferente",
+      "atendido": false
+    },
+    {
+      "texto": "Em Ajustes, o oficial cria, renomeia e exclui categorias; categoria já usada em lançamento não pode ser excluída e a tela explica o motivo",
+      "atendido": false
+    },
+    {
+      "texto": "A partir do cadastro de um irmão, o oficial abre a ficha cadastral e a ficha de cada Ordem, e a impressão sai em A4 sem menu lateral nem botões",
+      "atendido": false
+    },
+    {
+      "texto": "Na ficha de uma Ordem de que o irmão ainda não participa, os campos da Ordem saem em branco para preenchimento à mão",
+      "atendido": false
+    },
+    {
+      "texto": "Em Relatórios, o oficial emite as fichas de todos os irmãos de uma Ordem (uma por página), o quadro de irmãos de uma Ordem e o extrato do caixa de uma Ordem em um período",
+      "atendido": false
+    },
+    {
+      "texto": "O extrato mostra saldo anterior, cada lançamento com saldo acumulado, totais de entradas e saídas e saldo final",
+      "atendido": false
+    },
+    {
+      "texto": "O Painel mostra o saldo atual do caixa de cada Ordem",
+      "atendido": false
+    },
+    {
+      "texto": "Tentar excluir um irmão que tem lançamentos no caixa mostra uma mensagem clara e não apaga nada",
+      "atendido": false
+    },
+    {
+      "texto": "Sem sessão (chave pública apenas), nenhuma linha das novas tabelas é lida ou gravada",
+      "atendido": false
+    },
+    {
+      "texto": "`npm run db:reset`, `npm run lint` e `npm run build` terminam sem erro",
+      "atendido": false
+    }
+  ],
+  "cenarios": {
+    "feliz": "O Tesoureiro entra, abre Tesouraria, escolhe Arco Real e registra a anuidade paga por um irmão (entrada) e a compra de paramentos (saída). O saldo do Arco Real é atualizado. No fim do mês ele abre Relatórios, emite o extrato do período e imprime. O Escriba abre o cadastro de um irmão, emite a ficha do Arco Real e imprime para arquivo.",
+    "alternativos": [
+      {
+        "situacao": "Não existe categoria adequada para o lançamento",
+        "comportamento": "O oficial cria a categoria em Ajustes (nome e tipo) e ela passa a aparecer no formulário de lançamento"
+      },
+      {
+        "situacao": "Lançamento registrado com valor ou Ordem errados",
+        "comportamento": "O oficial edita ou exclui o lançamento; o saldo é recalculado. (Comportamento provisório, ver pergunta sobre correção de lançamentos.)"
+      },
+      {
+        "situacao": "Implantação: a Ordem já tem dinheiro em caixa antes de usar o sistema",
+        "comportamento": "O oficial registra uma entrada na categoria \"Saldo inicial\" com a data de corte"
+      },
+      {
+        "situacao": "Irmão ainda não pertence à Ordem cuja ficha foi pedida",
+        "comportamento": "A ficha sai com identificação e dados da loja simbólica preenchidos e os campos da Ordem em branco, servindo de ficha de proposta"
+      },
+      {
+        "situacao": "Oficial tenta excluir do cadastro um irmão com lançamentos no caixa",
+        "comportamento": "O sistema recusa e informa que há lançamentos vinculados"
+      },
+      {
+        "situacao": "Período sem lançamentos",
+        "comportamento": "A lista e o extrato informam que não há lançamentos; os saldos anterior e final continuam corretos"
+      }
+    ]
+  },
+  "restricoes": [
+    "Esta spec segue para plano e implementação com perguntas em aberto por pedido explícito do responsável (2026-11-10): o MVP serve de base para o debate entre os três irmãos. Cada pergunta em `precisa_esclarecer` traz o comportamento provisório adotado; a resposta definitiva pode exigir ajuste e vira nova WP ou nova feature",
+    "Nenhuma regra em aberto é fixada em código quando pode ser dado: categorias são cadastro (tela Ajustes), período é filtro livre",
+    "Sem dependência nova: impressão e PDF usam o recurso de imprimir do navegador (licença GPL-3.0, ver CLAUDE.md)",
+    "Texto de interface em português do Brasil conforme as regras de conteúdo do design system (sentence case, sem emoji, dinheiro como R$ 1.240,00, data dd/mm/aaaa)",
+    "Stack e convenções do CLAUDE.md: Next.js 16 App Router em JS, Supabase com RLS, leitura em Server Components, mutação em Server Actions, componentes só de `@/ds`"
+  ],
+  "dependencias": [
+    "001-modelagem-banco-dados (tabelas loja, macom, arco_real, marca, nauta)",
+    "App Next.js + Supabase já existente (login, cadastro de irmãos, lojas)"
+  ],
+  "precisa_esclarecer": [
+    {
+      "pergunta": "ESTRUTURA. O sistema atende um único corpo por Ordem (um Capítulo, uma Loja de Marca, uma Loja de Nautas) ou vários? Provisório no MVP: um caixa por Ordem (três caixas) e o nome do Capítulo/Loja continua texto livre no cadastro de cada irmão. Se houver mais de um corpo por Ordem, caixa, quadro e fichas precisam ser por corpo.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "ACESSO. Quem pode ver e alterar o quê? Provisório no MVP: todo oficial autenticado vê e altera tudo, nas três Ordens (como já era no cadastro). Alternativas: perfis por cargo (Escriba/Secretário x Tesoureiro), acesso por Ordem, perfil somente leitura.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, correção de lançamentos. Um lançamento errado pode ser editado e excluído livremente, ou deve ser corrigido por estorno (o original fica intocado)? Provisório no MVP: edição e exclusão livres; o sistema guarda quem criou e a data da última alteração, mas não o histórico de alterações.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, exercício e fechamento. O exercício financeiro é o ano civil? Existe fechamento (mensal ou anual) depois do qual nada mais pode ser alterado, e prestação de contas formal? Provisório no MVP: sem fechamento; a tela abre no ano civil corrente e o período é um filtro livre.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, saldo inicial. Qual a data de corte e o saldo de abertura de cada Ordem? Provisório no MVP: lançar uma entrada na categoria \"Saldo inicial\".",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, categorias. Quais são as categorias definitivas de entrada e de saída, e são as mesmas para as três Ordens? Provisório no MVP: lista inicial única para as três Ordens, editável em Ajustes. Entradas: Saldo inicial, Anuidade, Joia, Taxa de admissão, Doação, Outras entradas. Saídas: Taxas e repasses, Paramentos e materiais, Aluguel e manutenção, Ágape, Beneficência, Outras saídas.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "CAIXA, dinheiro em espécie x banco. Cada Ordem tem conta bancária própria? É preciso separar caixa físico de conta, ou registrar a forma de pagamento (dinheiro, PIX, transferência)? Provisório no MVP: um único saldo por Ordem, sem forma de pagamento.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "COBRANÇA. O sistema deve controlar o que cada irmão deve (anuidade ou mensalidade por Ordem, valor, vencimento, situação quite/pendente/vencido), como no protótipo do design? Provisório no MVP: só registra o que foi efetivamente recebido e pago; não há previsão nem inadimplência.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "RECIBOS E COMPROVANTES. O sistema deve emitir recibo numerado ao registrar uma entrada (qual a numeração)? Deve guardar o comprovante ou a nota de cada saída? Provisório no MVP: nenhum dos dois.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "IRMÃO QUE SAI. Irmão desligado, licenciado ou falecido deve ser excluído ou marcado com uma situação (por Ordem)? Provisório no MVP: não há situação; exclusão continua possível, exceto quando o irmão tem lançamentos no caixa (aí o sistema bloqueia).",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "FICHAS, modelos. Quais fichas precisam ser emitidas e quais são os modelos oficiais de cada Ordem (campos, assinaturas, brasão)? Provisório no MVP: ficha cadastral completa e uma ficha de registro por Ordem em layout próprio, com os campos que existem no cadastro, sem campos de assinatura. Para reproduzir os formulários oficiais, enviar os modelos.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "FICHAS, campos que faltam. Os modelos oficiais pedem dados que o cadastro não tem (por exemplo profissão, estado civil, naturalidade, RG, número da loja, grau ou cargo, matrícula na Ordem)? Provisório no MVP: nenhum campo novo no cadastro.",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "ADMISSÕES. Como é o fluxo de admissão em cada Ordem (etapas, quem aprova, documentos, taxa)? Provisório no MVP: fora do escopo; a tela continua \"em definição\".",
+      "resolvido": false,
+      "resposta": ""
+    },
+    {
+      "pergunta": "DADOS PESSOAIS (LGPD). Há termo de consentimento dos irmãos para guardar CPF, endereço e foto? Quem responde pelos dados e por quanto tempo ficam guardados? Provisório no MVP: sem tratamento específico além do acesso restrito a oficiais autenticados.",
+      "resolvido": false,
+      "resposta": ""
+    }
+  ],
+  "fora_escopo": [
+    "Admissões, cobrança de anuidades, recibos, anexos e perfis de acesso (dependem das perguntas em aberto)",
+    "Importação de planilhas existentes e exportação para CSV/Excel",
+    "Envio de e-mails e notificações",
+    "Aplicativo ou layout para celular (a plataforma segue pensada para desktop)"
+  ]
+}
+</script>
+
+<div class="container">
+  <header>
+    <h1>Spec — <span class="feature-id" id="feature-id-display"></span></h1>
+    <span class="status-pill" id="status-pill"></span>
+  </header>
+
+  <div class="meta">
+    <label>Status:
+      <select id="field-status">
+        <option value="esclarecendo">esclarecendo</option>
+        <option value="pronto">pronto</option>
+      </select>
+    </label>
+    <label>Criada em: <input type="text" id="field-criada-em" size="10"></label>
+    <label>Autor: <input type="text" id="field-autor"></label>
+    <label>Domínio: <input type="text" id="field-dominio" size="12" placeholder="ex: auth"></label>
+  </div>
+
+  <div class="meta" style="margin-top:-20px; margin-bottom:24px">
+    <label style="flex:1">Tags:
+      <input type="text" id="field-tags" placeholder="oauth, supabase, mobile (separadas por vírgula)" style="width:100%; max-width:520px">
+    </label>
+  </div>
+
+  <section>
+    <h2>Objetivo</h2>
+    <div class="body">
+      <textarea id="field-objetivo" class="lg" placeholder="1–3 linhas, linguagem de produto. O que entrega ao usuário final."></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2>Motivação</h2>
+    <div class="body">
+      <textarea id="field-motivacao" class="lg" placeholder="Por que agora. Que dor evita."></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2>Escopo</h2>
+    <div class="body">
+      <h4>Inclui</h4>
+      <ul class="editable" id="list-inclui"></ul>
+      <button class="add-btn" data-add="inclui">+ adicionar item</button>
+
+      <h4 style="margin-top:16px">Não inclui</h4>
+      <ul class="editable" id="list-nao-inclui"></ul>
+      <button class="add-btn" data-add="nao_inclui">+ adicionar item</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Critérios de aceitação</h2>
+    <div class="body">
+      <ul class="editable" id="list-criterios"></ul>
+      <button class="add-btn" data-add="criterio">+ adicionar critério</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cenários de uso</h2>
+    <div class="body">
+      <h4>Cenário feliz</h4>
+      <textarea id="field-cenario-feliz" class="lg" placeholder="Passo 1, passo 2, ..., resultado."></textarea>
+
+      <h4 style="margin-top:16px">Cenários alternativos / erro</h4>
+      <div id="list-alternativos"></div>
+      <button class="add-btn" data-add="alternativo">+ adicionar cenário</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Restrições e premissas</h2>
+    <div class="body">
+      <ul class="editable" id="list-restricoes"></ul>
+      <button class="add-btn" data-add="restricao">+ adicionar restrição</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dependências</h2>
+    <div class="body">
+      <ul class="editable" id="list-dependencias"></ul>
+      <button class="add-btn" data-add="dependencia">+ adicionar dependência</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>PRECISA ESCLARECER</h2>
+    <div class="body">
+      <p class="empty-hint">Enquanto houver itens não resolvidos, status fica em "esclarecendo".</p>
+      <ul class="editable" id="list-esclarecer"></ul>
+      <button class="add-btn" data-add="esclarecer">+ adicionar pergunta</button>
+    </div>
+  </section>
+
+  <section class="collapsed">
+    <h2>Fora de escopo, mas relevante</h2>
+    <div class="body">
+      <ul class="editable" id="list-fora-escopo"></ul>
+      <button class="add-btn" data-add="fora_escopo">+ adicionar item</button>
+    </div>
+  </section>
+</div>
+
+<div class="toolbar">
+  <button id="btn-export">📋 Copiar JSON</button>
+  <button id="btn-view-json">{ } Ver JSON</button>
+  <button id="btn-save" class="primary">💾 Salvar (baixar HTML)</button>
+</div>
+
+<div class="modal-backdrop" id="modal-json">
+  <div class="modal">
+    <h3>JSON da spec</h3>
+    <textarea id="json-display" readonly></textarea>
+    <div class="modal-actions">
+      <button class="add-btn" onclick="closeModal()">Fechar</button>
+      <button class="add-btn" onclick="copyJson()">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =========================================================================
+// Estado: lemos o JSON embutido no <script id="spec-data">, mantemos em
+// memória, sincronizamos com o DOM e regeneramos o HTML inteiro ao salvar.
+// =========================================================================
+
+let state = JSON.parse(document.getElementById('spec-data').textContent);
+
+// Garante chaves opcionais para evitar acesso a undefined.
+function ensureShape() {
+  state.escopo = state.escopo || { inclui: [], nao_inclui: [] };
+  state.escopo.inclui = state.escopo.inclui || [];
+  state.escopo.nao_inclui = state.escopo.nao_inclui || [];
+  state.criterios_aceitacao = state.criterios_aceitacao || [];
+  state.cenarios = state.cenarios || { feliz: '', alternativos: [] };
+  state.cenarios.alternativos = state.cenarios.alternativos || [];
+  state.restricoes = state.restricoes || [];
+  state.dependencias = state.dependencias || [];
+  state.precisa_esclarecer = state.precisa_esclarecer || [];
+  state.fora_escopo = state.fora_escopo || [];
+}
+ensureShape();
+
+// --- Renderização --------------------------------------------------------
+
+function render() {
+  document.getElementById('feature-id-display').textContent = state.feature_id || '???';
+  document.getElementById('field-status').value = state.status || 'esclarecendo';
+  document.getElementById('field-criada-em').value = state.criada_em || '';
+  document.getElementById('field-autor').value = state.autor || '';
+  document.getElementById('field-dominio').value = state.dominio || '';
+  document.getElementById('field-tags').value = (state.tags || []).join(', ');
+  document.getElementById('field-objetivo').value = state.objetivo || '';
+  document.getElementById('field-motivacao').value = state.motivacao || '';
+  document.getElementById('field-cenario-feliz').value = state.cenarios.feliz || '';
+
+  updateStatusPill();
+  renderStringList('list-inclui', state.escopo.inclui, 'inclui');
+  renderStringList('list-nao-inclui', state.escopo.nao_inclui, 'nao_inclui');
+  renderCriterios();
+  renderAlternativos();
+  renderStringList('list-restricoes', state.restricoes, 'restricao');
+  renderStringList('list-dependencias', state.dependencias, 'dependencia');
+  renderEsclarecer();
+  renderStringList('list-fora-escopo', state.fora_escopo, 'fora_escopo');
+}
+
+function updateStatusPill() {
+  const pill = document.getElementById('status-pill');
+  const s = state.status || 'esclarecendo';
+  pill.textContent = s;
+  pill.className = 'status-pill status-' + s;
+}
+
+// Lista de strings simples (escopo, restrições, dependências, fora de escopo).
+function renderStringList(elId, items, kind) {
+  const ul = document.getElementById(elId);
+  ul.innerHTML = '';
+  items.forEach((item, idx) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <input type="text" value="${escapeAttr(item)}" data-kind="${kind}" data-idx="${idx}">
+      <div class="row-actions">
+        <button class="icon-btn" data-remove="${kind}" data-idx="${idx}" title="Remover">×</button>
+      </div>`;
+    ul.appendChild(li);
+  });
+}
+
+// Critérios: cada um tem texto + checkbox "atendido".
+function renderCriterios() {
+  const ul = document.getElementById('list-criterios');
+  ul.innerHTML = '';
+  state.criterios_aceitacao.forEach((c, idx) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <input type="checkbox" ${c.atendido ? 'checked' : ''} data-criterio-check="${idx}">
+      <input type="text" value="${escapeAttr(c.texto)}" data-criterio-text="${idx}">
+      <div class="row-actions">
+        <button class="icon-btn" data-remove="criterio" data-idx="${idx}" title="Remover">×</button>
+      </div>`;
+    ul.appendChild(li);
+  });
+}
+
+// Cenários alternativos: pares (situação, comportamento).
+function renderAlternativos() {
+  const container = document.getElementById('list-alternativos');
+  container.innerHTML = '';
+  state.cenarios.alternativos.forEach((alt, idx) => {
+    const row = document.createElement('div');
+    row.className = 'pair-row';
+    row.innerHTML = `
+      <input type="text" value="${escapeAttr(alt.situacao)}" data-alt-sit="${idx}" placeholder="Situação">
+      <input type="text" value="${escapeAttr(alt.comportamento)}" data-alt-comp="${idx}" placeholder="Comportamento esperado">
+      <button class="icon-btn" data-remove="alternativo" data-idx="${idx}" title="Remover">×</button>`;
+    container.appendChild(row);
+  });
+}
+
+// "Precisa esclarecer": pergunta + checkbox resolvido + resposta opcional.
+function renderEsclarecer() {
+  const ul = document.getElementById('list-esclarecer');
+  ul.innerHTML = '';
+  state.precisa_esclarecer.forEach((e, idx) => {
+    const li = document.createElement('li');
+    li.style.flexDirection = 'column';
+    li.style.alignItems = 'stretch';
+    li.innerHTML = `
+      <div style="display:flex; gap:8px; align-items:flex-start; width:100%">
+        <input type="checkbox" ${e.resolvido ? 'checked' : ''} data-esc-check="${idx}" style="margin-top:11px">
+        <input type="text" value="${escapeAttr(e.pergunta)}" data-esc-q="${idx}" placeholder="Pergunta aberta" style="flex:1">
+        <button class="icon-btn" data-remove="esclarecer" data-idx="${idx}" title="Remover">×</button>
+      </div>
+      ${e.resolvido ? `<textarea data-esc-a="${idx}" placeholder="Resposta (opcional)" style="margin-top:6px; margin-left:24px; width:calc(100% - 60px)">${escapeText(e.resposta || '')}</textarea>` : ''}
+    `;
+    ul.appendChild(li);
+  });
+}
+
+function escapeAttr(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function escapeText(s) { return String(s || '').replace(/</g, '&lt;'); }
+
+// --- Event handlers ------------------------------------------------------
+
+// Mudanças simples nos campos top-level.
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.id === 'field-status') { state.status = t.value; updateStatusPill(); return; }
+  if (t.id === 'field-criada-em') { state.criada_em = t.value; return; }
+  if (t.id === 'field-autor') { state.autor = t.value; return; }
+  if (t.id === 'field-dominio') { state.dominio = t.value.trim().toLowerCase(); return; }
+  if (t.id === 'field-tags') {
+    state.tags = t.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    return;
+  }
+  if (t.id === 'field-objetivo') { state.objetivo = t.value; return; }
+  if (t.id === 'field-motivacao') { state.motivacao = t.value; return; }
+  if (t.id === 'field-cenario-feliz') { state.cenarios.feliz = t.value; return; }
+
+  // Listas de string
+  if (t.dataset.kind) {
+    const idx = parseInt(t.dataset.idx);
+    const kind = t.dataset.kind;
+    if (kind === 'inclui') state.escopo.inclui[idx] = t.value;
+    else if (kind === 'nao_inclui') state.escopo.nao_inclui[idx] = t.value;
+    else if (kind === 'restricao') state.restricoes[idx] = t.value;
+    else if (kind === 'dependencia') state.dependencias[idx] = t.value;
+    else if (kind === 'fora_escopo') state.fora_escopo[idx] = t.value;
+    return;
+  }
+
+  // Critérios
+  if (t.dataset.criterioText !== undefined) {
+    state.criterios_aceitacao[parseInt(t.dataset.criterioText)].texto = t.value;
+    return;
+  }
+
+  // Alternativos
+  if (t.dataset.altSit !== undefined) {
+    state.cenarios.alternativos[parseInt(t.dataset.altSit)].situacao = t.value;
+    return;
+  }
+  if (t.dataset.altComp !== undefined) {
+    state.cenarios.alternativos[parseInt(t.dataset.altComp)].comportamento = t.value;
+    return;
+  }
+
+  // Esclarecer
+  if (t.dataset.escQ !== undefined) {
+    state.precisa_esclarecer[parseInt(t.dataset.escQ)].pergunta = t.value;
+    return;
+  }
+  if (t.dataset.escA !== undefined) {
+    state.precisa_esclarecer[parseInt(t.dataset.escA)].resposta = t.value;
+    return;
+  }
+});
+
+// Checkboxes (mudança imediata + re-render se afeta layout).
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.dataset.criterioCheck !== undefined) {
+    state.criterios_aceitacao[parseInt(t.dataset.criterioCheck)].atendido = t.checked;
+    return;
+  }
+  if (t.dataset.escCheck !== undefined) {
+    state.precisa_esclarecer[parseInt(t.dataset.escCheck)].resolvido = t.checked;
+    renderEsclarecer(); // re-renderiza pra mostrar/esconder textarea de resposta
+    return;
+  }
+});
+
+// Botões "+" e "×".
+document.addEventListener('click', (e) => {
+  const t = e.target;
+
+  // Toggle de seção
+  if (t.tagName === 'H2') {
+    t.parentElement.classList.toggle('collapsed');
+    return;
+  }
+
+  // Adicionar
+  if (t.dataset.add) {
+    const kind = t.dataset.add;
+    if (kind === 'inclui') state.escopo.inclui.push('');
+    else if (kind === 'nao_inclui') state.escopo.nao_inclui.push('');
+    else if (kind === 'criterio') state.criterios_aceitacao.push({ texto: '', atendido: false });
+    else if (kind === 'alternativo') state.cenarios.alternativos.push({ situacao: '', comportamento: '' });
+    else if (kind === 'restricao') state.restricoes.push('');
+    else if (kind === 'dependencia') state.dependencias.push('');
+    else if (kind === 'esclarecer') state.precisa_esclarecer.push({ pergunta: '', resolvido: false });
+    else if (kind === 'fora_escopo') state.fora_escopo.push('');
+    render();
+    return;
+  }
+
+  // Remover
+  if (t.dataset.remove) {
+    const idx = parseInt(t.dataset.idx);
+    const kind = t.dataset.remove;
+    if (kind === 'inclui') state.escopo.inclui.splice(idx, 1);
+    else if (kind === 'nao_inclui') state.escopo.nao_inclui.splice(idx, 1);
+    else if (kind === 'criterio') state.criterios_aceitacao.splice(idx, 1);
+    else if (kind === 'alternativo') state.cenarios.alternativos.splice(idx, 1);
+    else if (kind === 'restricao') state.restricoes.splice(idx, 1);
+    else if (kind === 'dependencia') state.dependencias.splice(idx, 1);
+    else if (kind === 'esclarecer') state.precisa_esclarecer.splice(idx, 1);
+    else if (kind === 'fora_escopo') state.fora_escopo.splice(idx, 1);
+    render();
+    return;
+  }
+});
+
+// --- Salvar (regenera HTML completo com JSON novo embutido) -------------
+
+document.getElementById('btn-save').addEventListener('click', () => {
+  // Limpa strings vazias antes de salvar — humano deixa caixas em branco às vezes.
+  cleanState();
+  const html = serializeHTML();
+  downloadFile(`spec-${state.feature_id || 'sem-id'}.html`, html);
+  toast('HTML baixado. Substitua o arquivo no projeto.');
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  cleanState();
+  navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+  toast('JSON copiado para o clipboard.');
+});
+
+document.getElementById('btn-view-json').addEventListener('click', () => {
+  cleanState();
+  document.getElementById('json-display').value = JSON.stringify(state, null, 2);
+  document.getElementById('modal-json').classList.add('open');
+});
+
+function closeModal() {
+  document.getElementById('modal-json').classList.remove('open');
+}
+function copyJson() {
+  const ta = document.getElementById('json-display');
+  ta.select();
+  navigator.clipboard.writeText(ta.value);
+  toast('Copiado.');
+}
+
+function cleanState() {
+  // Tira itens de string vazia de listas simples.
+  state.escopo.inclui = state.escopo.inclui.filter(x => x && x.trim());
+  state.escopo.nao_inclui = state.escopo.nao_inclui.filter(x => x && x.trim());
+  state.restricoes = state.restricoes.filter(x => x && x.trim());
+  state.dependencias = state.dependencias.filter(x => x && x.trim());
+  state.fora_escopo = state.fora_escopo.filter(x => x && x.trim());
+  state.criterios_aceitacao = state.criterios_aceitacao.filter(c => c.texto && c.texto.trim());
+  state.cenarios.alternativos = state.cenarios.alternativos.filter(a => (a.situacao && a.situacao.trim()) || (a.comportamento && a.comportamento.trim()));
+  state.precisa_esclarecer = state.precisa_esclarecer.filter(e => e.pergunta && e.pergunta.trim());
+}
+
+// Pega o HTML atual da página, substitui o JSON embutido pelo state atualizado.
+// É importante não pegar o DOM "renderizado" — usamos o HTML original do <script>
+// e só trocamos o conteúdo do data block. Assim os controles voltam vazios e o
+// próximo carregamento reidrata do JSON.
+function serializeHTML() {
+  // Pega o HTML atual antes de qualquer mudança que o JS aplicou.
+  // Como rerendering só altera DOM, document.documentElement.outerHTML traz o
+  // estado vivo. Mas o <script id="spec-data"> mantém seu textContent — o que
+  // mudou foi state em memória. Então: substituímos o conteúdo do bloco.
+  const json = JSON.stringify(state, null, 2);
+
+  // Constrói a partir do <!doctype>.
+  // Pegamos outerHTML e trocamos só o conteúdo do script de dados.
+  const clone = document.documentElement.cloneNode(true);
+
+  // Limpa valores que o usuário digitou nos inputs/textareas dentro do clone —
+  // eles serão repopulados a partir do JSON ao abrir o arquivo de novo.
+  clone.querySelectorAll('input[type="text"], textarea').forEach(el => {
+    el.setAttribute('value', '');
+    if (el.tagName === 'TEXTAREA') el.textContent = '';
+  });
+  clone.querySelectorAll('input[type="checkbox"]').forEach(el => el.removeAttribute('checked'));
+  // Listas dinâmicas: deixamos vazias para o JS popular ao abrir.
+  ['list-inclui','list-nao-inclui','list-criterios','list-alternativos','list-restricoes','list-dependencias','list-esclarecer','list-fora-escopo'].forEach(id => {
+    const el = clone.querySelector('#' + id);
+    if (el) el.innerHTML = '';
+  });
+  // Status pill será regenerado.
+  const pill = clone.querySelector('#status-pill');
+  if (pill) { pill.textContent = ''; pill.className = 'status-pill'; }
+  const fid = clone.querySelector('#feature-id-display');
+  if (fid) fid.textContent = '';
+  // Modal fechado.
+  const modal = clone.querySelector('#modal-json');
+  if (modal) modal.classList.remove('open');
+
+  // Substitui o JSON embutido.
+  const dataScript = clone.querySelector('#spec-data');
+  if (dataScript) dataScript.textContent = '\n' + json + '\n';
+
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// Fechar modal clicando fora.
+document.getElementById('modal-json').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-json') closeModal();
+});
+
+// Boot.
+render();
+</script>
+</body>
+</html>
