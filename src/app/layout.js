@@ -15,6 +15,7 @@ const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], var
 export const metadata = {
   title: { default: 'Ordens Inglesas', template: '%s · Ordens Inglesas' },
   description: 'Plataforma interna de cadastro e registro do Arco Real, Mestre Maçom da Marca e Nautas da Arca Real.',
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }) {

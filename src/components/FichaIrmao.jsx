@@ -1,4 +1,4 @@
-import { ORDENS, formatarCpf, formatarData } from '@/lib/formatar';
+import { ORDENS, SITUACOES, formatarCpf, formatarData } from '@/lib/formatar';
 import { Aviso, Folha, Secao } from './Folha';
 
 /** Modelos de ficha. As chaves de Ordem são as mesmas do resto da interface. */
@@ -27,6 +27,8 @@ function Campo({ rotulo, valor, colunas = 4 }) {
 }
 
 const data = (iso) => (iso ? formatarData(iso) : null);
+/** 'Licenciado desde 01/03/2026'; registro em branco (ficha de proposta) -> linha vazia. */
+const situacao = (r) => (r.situacao ? `${SITUACOES[r.situacao]}${r.situacao_desde ? ` desde ${formatarData(r.situacao_desde)}` : ''}` : null);
 
 /** Quadro 3x4: mostra a foto do cadastro (URL http/https) ou fica em branco para colar a foto. */
 function Foto({ url }) {
@@ -48,6 +50,7 @@ function Identificacao({ irmao }) {
           <Campo rotulo="CPF" valor={formatarCpf(irmao.cpf)} />
           <Campo rotulo="CIM" valor={irmao.cim} />
           <Campo rotulo="Data de nascimento" valor={data(irmao.data_nascimento)} />
+          {irmao.data_falecimento && <Campo rotulo="Data de falecimento" valor={data(irmao.data_falecimento)} colunas={12} />}
           <Campo rotulo="E-mail" valor={irmao.email} colunas={7} />
           <Campo rotulo="Telefone" valor={irmao.telefone} colunas={5} />
           <Campo rotulo="Endereço" valor={irmao.endereco} colunas={9} />
@@ -85,6 +88,7 @@ function ArcoReal({ r }) {
         <Campo rotulo="Instalação 3º P" valor={data(r.data_instalacao_3p)} />
         <Campo rotulo="Instalação 2º P" valor={data(r.data_instalacao_2p)} />
         <Campo rotulo="Instalação 1º P" valor={data(r.data_instalacao_1p)} />
+        <Campo rotulo="Situação" valor={situacao(r)} colunas={12} />
       </div>
     </Secao>
   );
@@ -100,6 +104,7 @@ function Marca({ r }) {
         <Campo rotulo="Secundado por" valor={r.secundado_por} colunas={6} />
         <Campo rotulo="Marca do candidato" valor={r.marca_candidato} colunas={8} />
         <Campo rotulo="Instalação VM" valor={data(r.data_instalacao_vm)} />
+        <Campo rotulo="Situação" valor={situacao(r)} colunas={12} />
       </div>
     </Secao>
   );
@@ -112,6 +117,7 @@ function Nautas({ r }) {
         <Campo rotulo="Loja de Nautas da Arca Real" valor={r.nome_loja_nauta} colunas={12} />
         <Campo rotulo="Elevação" valor={data(r.data_elevacao)} colunas={6} />
         <Campo rotulo="Instalação VC" valor={data(r.data_instalacao_vc)} colunas={6} />
+        <Campo rotulo="Situação" valor={situacao(r)} colunas={12} />
       </div>
     </Secao>
   );

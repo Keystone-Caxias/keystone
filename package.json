@@ -4,6 +4,9 @@
   "private": true,
   "license": "GPL-3.0-only",
   "description": "Plataforma interna das Ordens Inglesas: cadastro de irmãos, lojas e registros de Arco Real, Marca e Nautas.",
+  "engines": {
+    "node": ">=20.9"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -1,6 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { recusaDeGravacao } from '@/lib/acesso';
 import { POTENCIAS } from '@/lib/formatar';
 import { createClient } from '@/lib/supabase/server';
 
@@ -31,6 +32,8 @@ export async function salvarLoja(prevState, formData) {
   const loja = { nome, potencia_simbolica: potencia, endereco: texto(formData, 'endereco') };
 
   const supabase = await createClient();
+  const recusa = await recusaDeGravacao(supabase);
+  if (recusa) return { erro: recusa };
   const { error } = id
     ? await supabase.from('loja').update(loja).eq('id', id)
     : await supabase.from('loja').insert(loja);
@@ -43,6 +46,8 @@ export async function excluirLoja(prevState, formData) {
   const id = texto(formData, 'id');
   if (!id) return { erro: 'Loja não identificada.' };
   const supabase = await createClient();
+  const recusa = await recusaDeGravacao(supabase);
+  if (recusa) return { erro: recusa };
   const { error } = await supabase.from('loja').delete().eq('id', id);
   if (error) return { erro: traduzirErro(error) };
   revalidar();

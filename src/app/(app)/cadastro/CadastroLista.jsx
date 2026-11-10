@@ -2,7 +2,13 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, DataTable, IconButton, Input, RowActions, Select, Tabs, Tag, Toast, Tooltip } from '@/ds';
-import { ORDENS, formatarCpf, formatarData } from '@/lib/formatar';
+import { ORDEM_DB, ORDENS, SITUACOES, formatarCpf, formatarData } from '@/lib/formatar';
+
+/** Etiqueta da Ordem; fora de 'ativo', acrescenta a situação do irmão nela. */
+function TagOrdem({ irmao, ordem }) {
+  const situacao = irmao[ORDEM_DB[ordem]]?.situacao;
+  return <Tag order={ordem}>{ORDENS[ordem]}{situacao && situacao !== 'ativo' ? ` · ${SITUACOES[situacao].toLowerCase()}` : ''}</Tag>;
+}
 
 const MENSAGENS = {
   criado: ['Cadastro concluído', 'O irmão consta no registro.'],
@@ -28,7 +34,8 @@ function Detalhe({ irmao, onClose }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'grid', gap: 6, minWidth: 0 }}>
             <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {irmao.ordens.length === 0 ? <Tag>Grau simbólico</Tag> : irmao.ordens.map((o) => <Tag key={o} order={o}>{ORDENS[o]}</Tag>)}
+              {irmao.ordens.length === 0 ? <Tag>Grau simbólico</Tag> : irmao.ordens.map((o) => <TagOrdem key={o} irmao={irmao} ordem={o} />)}
+              {irmao.data_falecimento && <Tag>Falecido em {formatarData(irmao.data_falecimento)}</Tag>}
             </span>
             <h3 style={{ fontSize: 'var(--fs-xl)' }}>{irmao.nome}</h3>
             <span className="numeric" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>{formatarCpf(irmao.cpf)}{irmao.cim ? ` · CIM ${irmao.cim}` : ''}</span>
@@ -132,7 +139,8 @@ export function CadastroLista({ irmaos, lojas, mensagem }) {
                 { key: 'loja', label: 'Loja', render: (r) => r.loja?.nome ?? '—' },
                 { key: 'ordens', label: 'Ordens', render: (r) => (
                   <span style={{ display: 'inline-flex', gap: 6 }}>
-                    {r.ordens.length === 0 ? <span style={{ color: 'var(--text-faint)' }}>—</span> : r.ordens.map((o) => <Tag key={o} order={o}>{ORDENS[o]}</Tag>)}
+                    {r.ordens.length === 0 ? <span style={{ color: 'var(--text-faint)' }}>—</span> : r.ordens.map((o) => <TagOrdem key={o} irmao={r} ordem={o} />)}
+                    {r.data_falecimento && <Tag>Falecido</Tag>}
                   </span>
                 ) },
                 { key: 'data_iniciacao', label: 'Iniciação', numeric: true, render: (r) => formatarData(r.data_iniciacao) },

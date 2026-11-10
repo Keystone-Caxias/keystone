@@ -22,7 +22,7 @@ function LinhaResumo({ rotulo, valor }) {
 }
 
 /** Posição do caixa de uma Ordem no período: valores calculados no banco (caixa_resumo). */
-function CaixaDaOrdem({ ordem, r }) {
+function CaixaDaOrdem({ ordem, r, fechadoAte }) {
   return (
     <Card accent={ordem} padding="var(--space-4) var(--space-5)">
       <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
@@ -37,12 +37,13 @@ function CaixaDaOrdem({ ordem, r }) {
           <LinhaResumo rotulo="Entradas" valor={r.entradas} />
           <LinhaResumo rotulo="Saídas" valor={-r.saidas} />
         </div>
+        {fechadoAte && <span className="numeric" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>Caixa fechado até {formatarData(fechadoAte)}</span>}
       </div>
     </Card>
   );
 }
 
-export function TesourariaLista({ resumo, lancamentos, truncado, categorias, ordem, de, ate, mensagem }) {
+export function TesourariaLista({ resumo, lancamentos, truncado, categorias, fechamentos = {}, ordem, de, ate, mensagem }) {
   const router = useRouter();
   const [navegando, iniciarNavegacao] = useTransition();
   const [campoDe, setCampoDe] = useState(de);
@@ -69,7 +70,8 @@ export function TesourariaLista({ resumo, lancamentos, truncado, categorias, ord
       if (tipo && l.tipo !== tipo) return false;
       if (categoriaId && l.categoria_id !== categoriaId) return false;
       if (!q) return true;
-      return (l.descricao || '').toLowerCase().includes(q)
+      return String(l.numero) === q
+        || (l.descricao || '').toLowerCase().includes(q)
         || (l.irmao?.nome || '').toLowerCase().includes(q)
         || (l.categoria?.nome || '').toLowerCase().includes(q);
     });
@@ -86,6 +88,7 @@ export function TesourariaLista({ resumo, lancamentos, truncado, categorias, ord
   }, [rows]);
 
   const colunas = [
+    { key: 'numero', label: 'Nº', numeric: true },
     { key: 'data', label: 'Data', numeric: true, render: (r) => formatarData(r.data) },
     ...(ordem ? [] : [{ key: 'ordem', label: 'Ordem', render: (r) => <Tag order={r.ordem}>{ORDENS[r.ordem]}</Tag> }]),
     { key: 'categoria', label: 'Categoria', strong: true, render: (r) => r.categoria?.nome ?? '—' },
@@ -104,7 +107,7 @@ export function TesourariaLista({ resumo, lancamentos, truncado, categorias, ord
     <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 'var(--space-6)', position: 'relative' }}>
       <div style={{ maxWidth: 'var(--width-content-max)', display: 'grid', gap: 'var(--space-6)', alignContent: 'start' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
-          {Object.keys(ORDENS).map((o) => <CaixaDaOrdem key={o} ordem={o} r={resumo[o] ?? { saldoAnterior: 0, entradas: 0, saidas: 0, saldoFinal: 0 }} />)}
+          {Object.keys(ORDENS).map((o) => <CaixaDaOrdem key={o} ordem={o} fechadoAte={fechamentos[o]?.ate} r={resumo[o] ?? { saldoAnterior: 0, entradas: 0, saidas: 0, saldoFinal: 0 }} />)}
         </div>
 
         <Card padding="0">
@@ -120,7 +123,7 @@ export function TesourariaLista({ resumo, lancamentos, truncado, categorias, ord
             <Button variant="ghost" disabled={navegando} onClick={() => { const p = periodoDoAno(); ir(ordem, p.de, p.ate); }}>Ano atual</Button>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
-            <Input placeholder="Buscar por descrição, irmão ou categoria" iconLeft="search" value={busca} onChange={(e) => setBusca(e.target.value)} wrapperStyle={{ flex: '1 1 240px' }} />
+            <Input placeholder="Buscar por número, descrição, irmão ou categoria" iconLeft="search" value={busca} onChange={(e) => setBusca(e.target.value)} wrapperStyle={{ flex: '1 1 240px' }} />
             <Select placeholder="Entradas e saídas" value={tipo} onChange={(e) => { setTipo(e.target.value); setCategoriaId(''); }}
               options={[{ value: 'entrada', label: 'Só entradas' }, { value: 'saida', label: 'Só saídas' }]} wrapperStyle={{ width: 190 }} />
             <Select placeholder="Todas as categorias" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}

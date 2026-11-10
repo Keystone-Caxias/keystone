@@ -336,4 +336,175 @@ Corrigir, nos formulários que já existiam, a perda do que foi digitado quando 
 
 ---
 
-<!-- Adicione mais WPs seguindo o mesmo formato. Numere em sequência: WP10, ... -->
+## WP10 — Migration 004: oficiais e papéis, situação, número, fechamento e histórico
+
+```yaml
+lane: revisão
+estimativa: 90min
+files:
+  - supabase/migrations/20261110180000_regras_de_negocio.sql
+  - supabase/seed.sql
+  - supabase/config.toml
+depende_de: [WP01]
+```
+
+### Objetivo
+Levar para o banco as regras fechadas no refino: lista de oficiais com papéis e RLS por papel; situação do irmão por Ordem e data de falecimento; número sequencial e forma de pagamento do lançamento; fechamento do caixa por Ordem; histórico de alterações dos lançamentos.
+
+### Definição de Pronto
+- [x] `npm run db:reset` aplica as quatro migrations e o seed
+- [x] Conta sem linha em `oficial` não lê nada; `leitura` lê e não grava; só `administrador` grava `caixa_fechamento` e chama `oficial_definir`/`oficial_remover`
+- [x] O último administrador não pode ser rebaixado nem removido
+- [x] Lançamento com data até o fechamento não pode ser criado, alterado, movido nem excluído (SQLSTATE KS001)
+- [x] Criar, alterar e excluir lançamento gera linha no histórico com autor; o histórico não aceita escrita pela API
+- [x] `numero` é atribuído pelo banco e não aceita valor informado
+- [x] Cadastro público de contas desligado no ambiente local
+- [x] `npm run lint` passa
+
+### Log
+- 2026-11-10: WP criada no refino do MVP (regras de negócio com menos pontas soltas e preparação para produção)
+- 2026-11-10: concluída, movida para revisão. Conferido pela API local com quatro contas (administrador, oficial, leitura e não autorizada): leituras 3/3/3/0 linhas; não autorizada e oficial recebem 42501 ao tentar se autorizar ou promover; leitura recebe 42501 no INSERT e 0 linhas no DELETE; `numero` informado é recusado (428C9); fechamento por oficial é recusado e por administrador grava; inserir, alterar, mover para dentro e excluir em período fechado devolvem KS001, e outra Ordem continua aberta; histórico registra criado/alterado/excluído com o e-mail; DELETE no histórico devolve 42501; último administrador devolve KS003; e-mail sem conta devolve KS002; `anon` recebe 42501 nas tabelas e funções novas; sign up público devolve `signup_disabled`. Os CPFs do seed passaram a ter dígitos verificadores válidos. No `config.toml`, só `[auth] enable_signup` foi desligado: desligar o de `[auth.email]` bloqueia também o login por e-mail na stack local.
+
+---
+
+## WP11 — Acesso no app: papel na sessão, tela de acesso pendente e gestão de oficiais
+
+```yaml
+lane: revisão
+estimativa: 75min
+files:
+  - src/lib/acesso.js
+  - src/lib/formatar.js
+  - src/lib/dados.js
+  - src/components/AcessoPendente.jsx
+  - src/components/Shell.jsx
+  - src/components/Sidebar.jsx
+  - src/app/(app)/layout.js
+  - src/app/imprimir/layout.js
+  - src/app/(app)/ajustes/page.js
+  - src/app/(app)/ajustes/actions.js
+  - src/app/(app)/ajustes/Oficiais.jsx
+  - src/app/(app)/ajustes/MinhaSenha.jsx
+  - src/app/(app)/lojas/actions.js
+depende_de: [WP10]
+```
+
+### Objetivo
+Fazer o app respeitar e explicar o controle de acesso: layouts barram conta não autorizada, toda Server Action de gravação confere o papel, Ajustes ganha a gestão de oficiais e a troca da própria senha.
+
+### Definição de Pronto
+- [x] Conta não autorizada vê "Acesso pendente"; sem nenhum oficial cadastrado, a tela mostra o comando SQL do primeiro administrador
+- [x] Administrador autoriza conta por e-mail, troca papel e retira acesso; e-mail sem conta mostra a orientação
+- [x] Perfil somente leitura recebe mensagem clara ao tentar gravar e não vê os controles de administração
+- [x] A barra lateral mostra o papel de quem está na sessão
+- [x] `npm run lint` passa
+
+### Log
+- 2026-11-10: WP criada no refino do MVP (regras de negócio com menos pontas soltas e preparação para produção)
+- 2026-11-10: concluída, movida para revisão. Verificado no navegador contra o Supabase local (build de produção): conta sem autorização vê a tela de acesso pendente nas duas variações e a área `/imprimir` redireciona para ela; depois do comando SQL o administrador entra, autoriza tesoureiro (oficial) e leitor (leitura), e um e-mail sem conta mostra a orientação; com o leitor, salvar uma loja devolve "Seu perfil é somente leitura" e Ajustes não mostra os controles de administração. A troca de senha não foi exercitada no navegador.
+
+---
+
+## WP12 — Tesouraria: número, forma de pagamento, fechamento, histórico e recibo
+
+```yaml
+lane: revisão
+estimativa: 90min
+files:
+  - src/app/(app)/tesouraria/actions.js
+  - src/app/(app)/tesouraria/LancamentoForm.jsx
+  - src/app/(app)/tesouraria/TesourariaLista.jsx
+  - src/app/(app)/tesouraria/page.js
+  - src/app/(app)/tesouraria/novo/page.js
+  - src/app/(app)/tesouraria/[id]/editar/page.js
+  - src/app/(app)/tesouraria/HistoricoCaixa.jsx
+  - src/app/(app)/tesouraria/historico/page.js
+  - src/app/(app)/ajustes/FechamentoCaixa.jsx
+  - src/app/imprimir/recibo/[id]/page.js
+depende_de: [WP11]
+```
+
+### Objetivo
+Mostrar e aplicar nas telas as regras do caixa: número do lançamento, forma de pagamento, bloqueio de período fechado com explicação, histórico e recibo das entradas; fechamento por Ordem em Ajustes.
+
+### Definição de Pronto
+- [x] Lista mostra o número e busca por ele; cartão da Ordem mostra "Caixa fechado até"
+- [x] Formulário avisa e não envia quando a data cai em período fechado; lançamento de período fechado abre travado e sem exclusão
+- [x] Data futura é recusada
+- [x] A edição mostra o histórico do lançamento e `/tesouraria/historico` mostra os últimos 200 registros
+- [x] Entrada emite recibo com número e valor por extenso; saída não
+- [x] Administrador fecha e reabre o caixa de cada Ordem em Ajustes
+- [x] `npm run lint` passa
+
+### Log
+- 2026-11-10: WP criada no refino do MVP (regras de negócio com menos pontas soltas e preparação para produção)
+- 2026-11-10: concluída, movida para revisão. Verificado no navegador: fechado o caixa da Marca até 30/04/2026 em Ajustes, o cartão da Marca mostra o fechamento; o lançamento nº 5 (15/03) abre travado, com o botão de salvar desabilitado e sem a zona de exclusão; novo lançamento com data 15/04 fica bloqueado com aviso e com data 10/06 é gravado como nº 14; alterar o valor para 1.240,50 e a forma de PIX para dinheiro aparece no histórico do lançamento ("Valor: R$ 150,00 → R$ 1.240,50 · Forma de pagamento: PIX → Dinheiro") e na tela Histórico do caixa; o recibo sai com "mil duzentos e quarenta reais e cinquenta centavos". O valor por extenso foi conferido por script em 15 casos (centavos, cem, mil, milhão). A data futura é barrada pelo próprio campo (`max`); a validação do servidor existe mas não foi exercitada. Reabrir o caixa não foi exercitado no navegador (o DELETE em `caixa_fechamento` foi conferido pela política na WP10 apenas para o INSERT).
+
+---
+
+## WP13 — Cadastro: situação por Ordem, falecimento e validações
+
+```yaml
+lane: revisão
+estimativa: 60min
+files:
+  - src/app/(app)/cadastro/actions.js
+  - src/app/(app)/cadastro/IrmaoForm.jsx
+  - src/app/(app)/cadastro/CadastroLista.jsx
+  - src/components/FichaIrmao.jsx
+  - src/app/imprimir/quadro/page.js
+  - src/lib/dados.js
+depende_de: [WP10]
+```
+
+### Objetivo
+Trocar a exclusão de quem sai por situação em cada Ordem, registrar falecimento e recusar CPF e datas incoerentes.
+
+### Definição de Pronto
+- [x] Cada bloco de Ordem tem situação e data; desligado sai do quadro, das fichas em lote e das contagens; licenciado aparece com a situação
+- [x] Falecimento registrado tira o irmão dos quadros e mantém o cadastro
+- [x] CPF com dígito verificador errado é recusado
+- [x] Datas futuras ou fora de ordem são recusadas com mensagem que cita as duas datas
+- [x] Desmarcar uma Ordem que já tem registro mostra aviso antes de salvar
+- [x] `npm run lint` passa
+
+### Log
+- 2026-11-10: WP criada no refino do MVP (regras de negócio com menos pontas soltas e preparação para produção)
+- 2026-11-10: concluída, movida para revisão. Verificado no navegador: passagem anterior à iniciação devolve "Passagem (01/01/2004) não pode ser anterior a iniciação (01/03/2005)"; CPF 123.456.789-01 devolve "CPF inválido"; marcado como desligado da Marca, o irmão aparece na lista com "Mestre da Marca · desligado", sai do quadro da Marca (1 irmão) e da contagem em Relatórios; o quadro de Nautas mostra Carlos como Licenciado. O campo de falecimento e o aviso ao desmarcar uma Ordem não foram exercitados no navegador.
+
+---
+
+## WP14 — Preparação para produção e documentação
+
+```yaml
+lane: revisão
+estimativa: 45min
+files:
+  - next.config.mjs
+  - vercel.json
+  - .github/workflows/ci.yml
+  - package.json
+  - src/app/layout.js
+  - README.md
+  - CLAUDE.md
+depende_de: [WP13]
+```
+
+### Objetivo
+Deixar o repositório pronto para publicar na Vercel com um projeto Supabase novo.
+
+### Definição de Pronto
+- [x] Cabeçalhos de segurança e `noindex` em todas as respostas
+- [x] Função da Vercel na região de São Paulo
+- [x] CI roda lint e build em cada PR
+- [x] README traz o roteiro de publicação, os papéis e as regras em vigor
+- [x] `npm run build` passa
+- [x] `npm run lint` passa
+
+### Log
+- 2026-11-10: WP criada no refino do MVP (regras de negócio com menos pontas soltas e preparação para produção)
+- 2026-11-10: concluída, movida para revisão. Conferido com `curl` no build de produção local: `X-Frame-Options: DENY`, `X-Robots-Tag: noindex, nofollow` e sem `X-Powered-By`. O workflow de CI e o `vercel.json` não foram executados (dependem do GitHub e da Vercel). Nenhum projeto Supabase ou Vercel foi criado ou alterado.
+
+---
+
+<!-- Adicione mais WPs seguindo o mesmo formato. Numere em sequência: WP15, ... -->
