@@ -15,14 +15,19 @@
 
 | # | Feature | Domínio | Status | Progresso | Pasta |
 |---|---------|---------|--------|-----------|-------|
-| 001 | <nome> | auth | 🟡 | 2/5 WPs | `current/001-<slug>/` |
-| 002 | <nome> | — | 🔵 | 0/0 | — (sem spec ainda) |
+| 001 | Modelagem do banco de dados | dados | 🟡 | 0/3 WPs prontas (3 em revisão) | `current/001-modelagem-banco-dados/` |
+| 002 | MVP: fichas preenchidas e caixa das Ordens | admin | 🟡 | 0/8 WPs prontas | `current/002-mvp-fichas-e-caixa/` |
 
 ## Próximas (priorizadas)
 
-1. <feature, 1 linha de descrição>
-2. <feature, 1 linha de descrição>
-3. <feature, 1 linha de descrição>
+> A ordem abaixo é uma sugestão; cada item depende de uma ou mais perguntas em aberto da spec 002 (`precisa_esclarecer`).
+
+1. Fichas nos modelos oficiais de cada Ordem (depende de receber os modelos e dos campos que faltam no cadastro)
+2. Situação do irmão por Ordem (ativo, licenciado, desligado) em vez de exclusão
+3. Cobrança de anuidades e inadimplência (previsto x arrecadado, situação quite/pendente/vencido)
+4. Recibo numerado e anexo de comprovantes
+5. Perfis de acesso por cargo e por Ordem
+6. Fluxo de admissões
 
 ## Concluídas recentemente
 
