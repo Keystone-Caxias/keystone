@@ -209,6 +209,15 @@
         "Fuso do servidor (UTC na Vercel)"
       ],
       "por_que": "Na Vercel o servidor roda em UTC: depois das 21h o \"hoje\" já seria amanhã, e a hora renderizada no servidor diverge da do navegador (erro de hidratação)."
+    },
+    {
+      "decisao": "Envio de formulários com Server Action",
+      "escolha": "Hook `useEnvio` (`src/lib/useEnvio.js`): `useActionState` + envio pelo `onSubmit` dentro de uma transição, em vez de `<form action>`",
+      "alternativas": [
+        "`<form action={action}>` direto (padrão anterior do projeto)",
+        "Devolver os valores enviados no estado da action e repassar como `defaultValue`"
+      ],
+      "por_que": "O React 19 limpa o formulário ao fim de toda action passada em `<form action>`, mesmo quando ela devolve erro de validação: o oficial perde tudo o que digitou e um `<select>` volta ao valor inicial mesmo sendo controlado (no lançamento, a Ordem mudaria sem aviso). Enviando pelo `onSubmit` nada é limpo. Custo: o envio passa a depender de JavaScript, o que o app já exige."
     }
   ],
   "arquivos": {
@@ -280,6 +289,10 @@
       {
         "caminho": "src/components/FichaIrmao.jsx",
         "proposito": "Conteúdo da ficha (identificação, loja simbólica, blocos das Ordens) nos quatro modelos"
+      },
+      {
+        "caminho": "src/lib/useEnvio.js",
+        "proposito": "Hook de envio de formulário que preserva o que foi digitado quando a action devolve erro"
       }
     ],
     "modificados": [
@@ -334,6 +347,14 @@
       {
         "caminho": "CLAUDE.md",
         "mudanca": "Migration 003, área `/imprimir`, convenções de dinheiro e de totais por RPC"
+      },
+      {
+        "caminho": "src/app/(app)/cadastro/IrmaoForm.jsx",
+        "mudanca": "Usa `useEnvio`: erro ao salvar (por exemplo CPF repetido) não apaga mais o formulário"
+      },
+      {
+        "caminho": "src/app/(app)/lojas/LojaForm.jsx",
+        "mudanca": "Usa `useEnvio` no formulário da loja, pelo mesmo motivo"
       }
     ],
     "nao_tocados": [
@@ -354,8 +375,8 @@
         "razao": "Migrations já aplicadas nunca são editadas; mudanças entram em migration nova"
       },
       {
-        "caminho": "src/app/(app)/lojas/**",
-        "razao": "Fora do escopo"
+        "caminho": "src/app/(app)/lojas/** (exceto LojaForm.jsx)",
+        "razao": "Fora do escopo; só o envio do formulário muda"
       }
     ]
   },

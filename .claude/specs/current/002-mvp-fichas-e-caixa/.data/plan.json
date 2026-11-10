@@ -7,105 +7,260 @@
     {
       "decisao": "Granularidade do caixa",
       "escolha": "Coluna `ordem` (enum `ordem_inglesa`: arco_real, marca, nauta) em cada lançamento; um caixa por Ordem",
-      "alternativas": ["Tabela `corpo` (Capítulo/Loja) com caixa por corpo", "Três tabelas, uma por Ordem"],
+      "alternativas": [
+        "Tabela `corpo` (Capítulo/Loja) com caixa por corpo",
+        "Três tabelas, uma por Ordem"
+      ],
       "por_que": "O pedido é \"caixa de cada Ordem\" e o modelo atual não tem entidade para o corpo (o nome do Capítulo/Loja é texto livre). Um enum é o menor passo; se a resposta à pergunta ESTRUTURA for \"vários corpos\", troca-se a coluna por uma FK numa migration futura."
     },
     {
       "decisao": "Categorias de lançamento",
       "escolha": "Tabela `categoria_caixa` (nome + tipo), mantida na tela Ajustes, com lista inicial provisória inserida pela migration",
-      "alternativas": ["Enum fixo no banco", "Texto livre com sugestões"],
+      "alternativas": [
+        "Enum fixo no banco",
+        "Texto livre com sugestões"
+      ],
       "por_que": "A lista definitiva é regra em aberto. Como tabela, os oficiais ajustam sem novo deploy; enum exigiria migration a cada mudança e texto livre sujaria os relatórios."
     },
     {
       "decisao": "Garantir categoria do mesmo tipo do lançamento",
       "escolha": "FK composta `(categoria_id, tipo)` em `lancamento_caixa` referenciando `UNIQUE (id, tipo)` de `categoria_caixa`",
-      "alternativas": ["Validar só na Server Action", "Derivar o tipo da categoria (sem coluna `tipo` no lançamento)"],
+      "alternativas": [
+        "Validar só na Server Action",
+        "Derivar o tipo da categoria (sem coluna `tipo` no lançamento)"
+      ],
       "por_que": "O banco recusa a inconsistência mesmo fora do app, e o tipo no próprio lançamento simplifica somas e índices."
     },
     {
       "decisao": "Cálculo de saldos e totais",
       "escolha": "Função SQL `caixa_resumo(p_inicio, p_fim, p_ordem)` (SECURITY INVOKER, search_path vazio) chamada por RPC",
-      "alternativas": ["Somar no JavaScript a lista carregada", "Agregados do PostgREST (`sum()`)"],
+      "alternativas": [
+        "Somar no JavaScript a lista carregada",
+        "Agregados do PostgREST (`sum()`)"
+      ],
       "por_que": "A API devolve no máximo 1000 linhas por resposta, então somar no cliente erra em silêncio; agregados do PostgREST vêm desligados no Supabase. A função roda com o RLS de quem chama."
     },
     {
       "decisao": "Representação de dinheiro",
       "escolha": "`NUMERIC(12,2)` com `CHECK (valor > 0)` no banco; centavos inteiros no JS; entrada de texto no padrão brasileiro convertida no servidor",
-      "alternativas": ["Inteiro em centavos no banco", "Float no JS"],
+      "alternativas": [
+        "Inteiro em centavos no banco",
+        "Float no JS"
+      ],
       "por_que": "NUMERIC é exato e legível em SQL; trabalhar em centavos no JS evita erro de ponto flutuante nas somas da tela."
     },
     {
       "decisao": "Autoria do lançamento",
       "escolha": "Colunas `criado_por` (uuid) e `criado_por_email`, preenchidas por trigger a partir de `auth.uid()` e do JWT; imutáveis em UPDATE",
-      "alternativas": ["Preencher na Server Action", "Não registrar"],
+      "alternativas": [
+        "Preencher na Server Action",
+        "Não registrar"
+      ],
       "por_que": "Controle de caixa entre vários oficiais pede saber quem lançou; por trigger o cliente não consegue forjar."
     },
     {
       "decisao": "Exclusão de irmão com lançamentos",
       "escolha": "`macom_id ... ON DELETE RESTRICT` e mensagem amigável na exclusão do cadastro (ExcluirIrmao passa a usar `useActionState`)",
-      "alternativas": ["ON DELETE SET NULL (perde o vínculo)", "ON DELETE CASCADE (apaga dinheiro)"],
+      "alternativas": [
+        "ON DELETE SET NULL (perde o vínculo)",
+        "ON DELETE CASCADE (apaga dinheiro)"
+      ],
       "por_que": "Registro financeiro não pode sumir nem perder a origem por efeito colateral. Provisório até a resposta da pergunta IRMÃO QUE SAI."
     },
     {
       "decisao": "Emissão de fichas e relatórios",
       "escolha": "Páginas HTML em `/imprimir/*` com layout próprio (sem Shell), CSS de impressão A4 (`@page`) e botão que chama `window.print()`",
-      "alternativas": ["Gerar PDF no servidor com biblioteca", "Preencher PDF/Word dos modelos oficiais"],
+      "alternativas": [
+        "Gerar PDF no servidor com biblioteca",
+        "Preencher PDF/Word dos modelos oficiais"
+      ],
       "por_que": "Zero dependência (GPL-3.0 fica simples), o navegador já salva em PDF, e os modelos oficiais ainda não foram recebidos. Quando chegarem, só o componente da ficha muda."
     },
     {
       "decisao": "Filtros da Tesouraria",
       "escolha": "Ordem e período na URL (`?ordem=&de=&ate=`), resolvidos no servidor; tipo, categoria e busca filtram no cliente a lista já carregada",
-      "alternativas": ["Tudo no cliente", "Tudo no servidor"],
+      "alternativas": [
+        "Tudo no cliente",
+        "Tudo no servidor"
+      ],
       "por_que": "Ordem e período definem os totais exatos (RPC) e limitam o volume lido; os demais são recortes rápidos sobre o que já está na tela, como no Cadastro."
     },
     {
       "decisao": "Datas e fuso",
       "escolha": "\"Hoje\" e formatação de data/hora sempre em America/Sao_Paulo (`src/lib/formatar.js`)",
-      "alternativas": ["Fuso do servidor (UTC na Vercel)"],
+      "alternativas": [
+        "Fuso do servidor (UTC na Vercel)"
+      ],
       "por_que": "Na Vercel o servidor roda em UTC: depois das 21h o \"hoje\" já seria amanhã, e a hora renderizada no servidor diverge da do navegador (erro de hidratação)."
+    },
+    {
+      "decisao": "Envio de formulários com Server Action",
+      "escolha": "Hook `useEnvio` (`src/lib/useEnvio.js`): `useActionState` + envio pelo `onSubmit` dentro de uma transição, em vez de `<form action>`",
+      "alternativas": [
+        "`<form action={action}>` direto (padrão anterior do projeto)",
+        "Devolver os valores enviados no estado da action e repassar como `defaultValue`"
+      ],
+      "por_que": "O React 19 limpa o formulário ao fim de toda action passada em `<form action>`, mesmo quando ela devolve erro de validação: o oficial perde tudo o que digitou e um `<select>` volta ao valor inicial mesmo sendo controlado (no lançamento, a Ordem mudaria sem aviso). Enviando pelo `onSubmit` nada é limpo. Custo: o envio passa a depender de JavaScript, o que o app já exige."
     }
   ],
   "arquivos": {
     "criados": [
-      { "caminho": "supabase/migrations/20261110120000_caixa_das_ordens.sql", "proposito": "Enums `ordem_inglesa` e `tipo_lancamento`, tabelas `categoria_caixa` e `lancamento_caixa`, triggers (updated_at, autoria), função `caixa_resumo`, RLS, GRANTs e categorias iniciais" },
-      { "caminho": "src/app/(app)/tesouraria/TesourariaLista.jsx", "proposito": "Cliente: cartões de saldo por Ordem, abas de Ordem, filtros, DataTable de lançamentos, total exibido, Toast" },
-      { "caminho": "src/app/(app)/tesouraria/LancamentoForm.jsx", "proposito": "Cliente: formulário de lançamento (novo/editar) e cartão de exclusão com Dialog" },
-      { "caminho": "src/app/(app)/tesouraria/actions.js", "proposito": "Server Actions `salvarLancamento` e `excluirLancamento`" },
-      { "caminho": "src/app/(app)/tesouraria/novo/page.js", "proposito": "Página de novo lançamento" },
-      { "caminho": "src/app/(app)/tesouraria/[id]/editar/page.js", "proposito": "Página de edição de lançamento" },
-      { "caminho": "src/app/(app)/ajustes/CategoriasCaixa.jsx", "proposito": "Cliente: lista de categorias por tipo, criar, renomear e excluir" },
-      { "caminho": "src/app/(app)/ajustes/actions.js", "proposito": "Server Actions `salvarCategoria` e `excluirCategoria`" },
-      { "caminho": "src/app/imprimir/layout.js", "proposito": "Layout da área de impressão: exige sessão, sem Shell, importa o CSS de impressão" },
-      { "caminho": "src/app/imprimir/imprimir.css", "proposito": "Regras `@page` A4, quebra de página por folha e ocultação da barra na impressão" },
-      { "caminho": "src/app/imprimir/BarraImpressao.jsx", "proposito": "Cliente: barra superior (Voltar, alternativas de modelo, Imprimir) que não sai no papel" },
-      { "caminho": "src/app/imprimir/ficha/[id]/page.js", "proposito": "Ficha de um irmão (`?modelo=cadastral|arco-real|marca|nautas`)" },
-      { "caminho": "src/app/imprimir/fichas/page.js", "proposito": "Fichas em lote de todos os irmãos de uma Ordem (`?ordem=`)" },
-      { "caminho": "src/app/imprimir/quadro/page.js", "proposito": "Quadro de irmãos de uma Ordem (`?ordem=`)" },
-      { "caminho": "src/app/imprimir/extrato/page.js", "proposito": "Extrato do caixa (`?ordem=&de=&ate=`), uma folha por Ordem" },
-      { "caminho": "src/components/Folha.jsx", "proposito": "Folha A4: cabeçalho com assinatura tipográfica, título, régua da Ordem e rodapé de emissão" },
-      { "caminho": "src/components/FichaIrmao.jsx", "proposito": "Conteúdo da ficha (identificação, loja simbólica, blocos das Ordens) nos quatro modelos" }
+      {
+        "caminho": "supabase/migrations/20261110120000_caixa_das_ordens.sql",
+        "proposito": "Enums `ordem_inglesa` e `tipo_lancamento`, tabelas `categoria_caixa` e `lancamento_caixa`, triggers (updated_at, autoria), função `caixa_resumo`, RLS, GRANTs e categorias iniciais"
+      },
+      {
+        "caminho": "src/app/(app)/tesouraria/TesourariaLista.jsx",
+        "proposito": "Cliente: cartões de saldo por Ordem, abas de Ordem, filtros, DataTable de lançamentos, total exibido, Toast"
+      },
+      {
+        "caminho": "src/app/(app)/tesouraria/LancamentoForm.jsx",
+        "proposito": "Cliente: formulário de lançamento (novo/editar) e cartão de exclusão com Dialog"
+      },
+      {
+        "caminho": "src/app/(app)/tesouraria/actions.js",
+        "proposito": "Server Actions `salvarLancamento` e `excluirLancamento`"
+      },
+      {
+        "caminho": "src/app/(app)/tesouraria/novo/page.js",
+        "proposito": "Página de novo lançamento"
+      },
+      {
+        "caminho": "src/app/(app)/tesouraria/[id]/editar/page.js",
+        "proposito": "Página de edição de lançamento"
+      },
+      {
+        "caminho": "src/app/(app)/ajustes/CategoriasCaixa.jsx",
+        "proposito": "Cliente: lista de categorias por tipo, criar, renomear e excluir"
+      },
+      {
+        "caminho": "src/app/(app)/ajustes/actions.js",
+        "proposito": "Server Actions `salvarCategoria` e `excluirCategoria`"
+      },
+      {
+        "caminho": "src/app/imprimir/layout.js",
+        "proposito": "Layout da área de impressão: exige sessão, sem Shell, importa o CSS de impressão"
+      },
+      {
+        "caminho": "src/app/imprimir/imprimir.css",
+        "proposito": "Regras `@page` A4, quebra de página por folha e ocultação da barra na impressão"
+      },
+      {
+        "caminho": "src/app/imprimir/BarraImpressao.jsx",
+        "proposito": "Cliente: barra superior (Voltar, alternativas de modelo, Imprimir) que não sai no papel"
+      },
+      {
+        "caminho": "src/app/imprimir/ficha/[id]/page.js",
+        "proposito": "Ficha de um irmão (`?modelo=cadastral|arco-real|marca|nautas`)"
+      },
+      {
+        "caminho": "src/app/imprimir/fichas/page.js",
+        "proposito": "Fichas em lote de todos os irmãos de uma Ordem (`?ordem=`)"
+      },
+      {
+        "caminho": "src/app/imprimir/quadro/page.js",
+        "proposito": "Quadro de irmãos de uma Ordem (`?ordem=`)"
+      },
+      {
+        "caminho": "src/app/imprimir/extrato/page.js",
+        "proposito": "Extrato do caixa (`?ordem=&de=&ate=`), uma folha por Ordem"
+      },
+      {
+        "caminho": "src/components/Folha.jsx",
+        "proposito": "Folha A4: cabeçalho com assinatura tipográfica, título, régua da Ordem e rodapé de emissão"
+      },
+      {
+        "caminho": "src/components/FichaIrmao.jsx",
+        "proposito": "Conteúdo da ficha (identificação, loja simbólica, blocos das Ordens) nos quatro modelos"
+      },
+      {
+        "caminho": "src/lib/useEnvio.js",
+        "proposito": "Hook de envio de formulário que preserva o que foi digitado quando a action devolve erro"
+      }
     ],
     "modificados": [
-      { "caminho": "src/lib/formatar.js", "mudanca": "Mapas `ORDEM_DB`/`ORDEM_UI`, `TIPOS_LANCAMENTO`, `formatarMoeda`, `lerMoeda`, `centavos`, `hojeISO`, `periodoPadrao`, `dataValida`; `formatarDataHora` fixa o fuso America/Sao_Paulo" },
-      { "caminho": "src/lib/dados.js", "mudanca": "Consultas do caixa: `listarCategorias`, `listarLancamentos` (paginada), `obterLancamento`, `resumoCaixa`; `listarIrmaosDaOrdem`; `listarIrmaosResumo`" },
-      { "caminho": "src/app/(app)/tesouraria/page.js", "mudanca": "Deixa de ser placeholder: lê filtros da URL, carrega resumo, lançamentos e categorias" },
-      { "caminho": "src/app/(app)/ajustes/page.js", "mudanca": "Deixa de ser placeholder: categorias do caixa" },
-      { "caminho": "src/app/(app)/relatorios/page.js", "mudanca": "Deixa de ser placeholder: atalhos para fichas em lote, quadro de irmãos e extrato" },
-      { "caminho": "src/app/(app)/page.js", "mudanca": "Cartão \"Caixa das Ordens\" com o saldo de cada Ordem; remove código morto (`semOrdem`)" },
-      { "caminho": "src/app/(app)/cadastro/CadastroLista.jsx", "mudanca": "Ação \"Emitir ficha\" na linha e no painel de detalhe" },
-      { "caminho": "src/app/(app)/cadastro/[id]/editar/page.js", "mudanca": "Botão \"Emitir ficha\" na Topbar" },
-      { "caminho": "src/app/(app)/cadastro/ExcluirIrmao.jsx", "mudanca": "Usa `useActionState` para mostrar o erro de exclusão na própria tela" },
-      { "caminho": "src/app/(app)/cadastro/actions.js", "mudanca": "`excluirIrmao` devolve `{ erro }` e traduz a violação de FK (irmão com lançamentos)" },
-      { "caminho": "supabase/seed.sql", "mudanca": "Lançamentos de exemplo nas três Ordens" },
-      { "caminho": "README.md", "mudanca": "Tabela de telas, estrutura e observação sobre impressão" },
-      { "caminho": "CLAUDE.md", "mudanca": "Migration 003, área `/imprimir`, convenções de dinheiro e de totais por RPC" }
+      {
+        "caminho": "src/lib/formatar.js",
+        "mudanca": "Mapas `ORDEM_DB`/`ORDEM_UI`, `TIPOS_LANCAMENTO`, `formatarMoeda`, `lerMoeda`, `centavos`, `hojeISO`, `periodoPadrao`, `dataValida`; `formatarDataHora` fixa o fuso America/Sao_Paulo"
+      },
+      {
+        "caminho": "src/lib/dados.js",
+        "mudanca": "Consultas do caixa: `listarCategorias`, `listarLancamentos` (paginada), `obterLancamento`, `resumoCaixa`; `listarIrmaosDaOrdem`; `listarIrmaosResumo`"
+      },
+      {
+        "caminho": "src/app/(app)/tesouraria/page.js",
+        "mudanca": "Deixa de ser placeholder: lê filtros da URL, carrega resumo, lançamentos e categorias"
+      },
+      {
+        "caminho": "src/app/(app)/ajustes/page.js",
+        "mudanca": "Deixa de ser placeholder: categorias do caixa"
+      },
+      {
+        "caminho": "src/app/(app)/relatorios/page.js",
+        "mudanca": "Deixa de ser placeholder: atalhos para fichas em lote, quadro de irmãos e extrato"
+      },
+      {
+        "caminho": "src/app/(app)/page.js",
+        "mudanca": "Cartão \"Caixa das Ordens\" com o saldo de cada Ordem; remove código morto (`semOrdem`)"
+      },
+      {
+        "caminho": "src/app/(app)/cadastro/CadastroLista.jsx",
+        "mudanca": "Ação \"Emitir ficha\" na linha e no painel de detalhe"
+      },
+      {
+        "caminho": "src/app/(app)/cadastro/[id]/editar/page.js",
+        "mudanca": "Botão \"Emitir ficha\" na Topbar"
+      },
+      {
+        "caminho": "src/app/(app)/cadastro/ExcluirIrmao.jsx",
+        "mudanca": "Usa `useActionState` para mostrar o erro de exclusão na própria tela"
+      },
+      {
+        "caminho": "src/app/(app)/cadastro/actions.js",
+        "mudanca": "`excluirIrmao` devolve `{ erro }` e traduz a violação de FK (irmão com lançamentos)"
+      },
+      {
+        "caminho": "supabase/seed.sql",
+        "mudanca": "Lançamentos de exemplo nas três Ordens"
+      },
+      {
+        "caminho": "README.md",
+        "mudanca": "Tabela de telas, estrutura e observação sobre impressão"
+      },
+      {
+        "caminho": "CLAUDE.md",
+        "mudanca": "Migration 003, área `/imprimir`, convenções de dinheiro e de totais por RPC"
+      },
+      {
+        "caminho": "src/app/(app)/cadastro/IrmaoForm.jsx",
+        "mudanca": "Usa `useEnvio`: erro ao salvar (por exemplo CPF repetido) não apaga mais o formulário"
+      },
+      {
+        "caminho": "src/app/(app)/lojas/LojaForm.jsx",
+        "mudanca": "Usa `useEnvio` no formulário da loja, pelo mesmo motivo"
+      }
     ],
     "nao_tocados": [
-      { "caminho": "src/ds/**", "razao": "Design system vendorizado; nenhum componente ou ícone novo é necessário" },
-      { "caminho": "src/proxy.js", "razao": "Já protege toda rota que não seja /login, inclusive /imprimir" },
-      { "caminho": "src/app/(app)/admissoes/page.js", "razao": "Fluxo de admissão segue em definição (pergunta ADMISSÕES)" },
-      { "caminho": "supabase/migrations/20260812120000_criar_schema_macons.sql e 20260918120000_auditoria_rls_cascata.sql", "razao": "Migrations já aplicadas nunca são editadas; mudanças entram em migration nova" },
-      { "caminho": "src/app/(app)/lojas/**", "razao": "Fora do escopo" }
+      {
+        "caminho": "src/ds/**",
+        "razao": "Design system vendorizado; nenhum componente ou ícone novo é necessário"
+      },
+      {
+        "caminho": "src/proxy.js",
+        "razao": "Já protege toda rota que não seja /login, inclusive /imprimir"
+      },
+      {
+        "caminho": "src/app/(app)/admissoes/page.js",
+        "razao": "Fluxo de admissão segue em definição (pergunta ADMISSÕES)"
+      },
+      {
+        "caminho": "supabase/migrations/20260812120000_criar_schema_macons.sql e 20260918120000_auditoria_rls_cascata.sql",
+        "razao": "Migrations já aplicadas nunca são editadas; mudanças entram em migration nova"
+      },
+      {
+        "caminho": "src/app/(app)/lojas/** (exceto LojaForm.jsx)",
+        "razao": "Fora do escopo; só o envio do formulário muda"
+      }
     ]
   },
   "estrutura_dados": "```sql\nCREATE TYPE ordem_inglesa   AS ENUM ('arco_real', 'marca', 'nauta');\nCREATE TYPE tipo_lancamento AS ENUM ('entrada', 'saida');\n\nCREATE TABLE categoria_caixa (\n    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    nome       TEXT NOT NULL CHECK (btrim(nome) <> ''),\n    tipo       tipo_lancamento NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    CONSTRAINT categoria_caixa_id_tipo_key UNIQUE (id, tipo)\n);\nCREATE UNIQUE INDEX categoria_caixa_nome_tipo_key ON categoria_caixa (lower(nome), tipo);\n\nCREATE TABLE lancamento_caixa (\n    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    ordem            ordem_inglesa NOT NULL,\n    tipo             tipo_lancamento NOT NULL,\n    data             DATE NOT NULL,\n    valor            NUMERIC(12,2) NOT NULL CHECK (valor > 0),\n    categoria_id     UUID NOT NULL,\n    descricao        TEXT,\n    macom_id         UUID REFERENCES macom(id) ON DELETE RESTRICT,\n    criado_por       UUID REFERENCES auth.users(id) ON DELETE SET NULL,\n    criado_por_email TEXT,\n    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),\n    CONSTRAINT lancamento_caixa_categoria_fkey\n        FOREIGN KEY (categoria_id, tipo) REFERENCES categoria_caixa (id, tipo)\n);\n-- índices: (ordem, data DESC), (macom_id), (categoria_id)\n\n-- Totais exatos por Ordem em um período (RPC):\ncaixa_resumo(p_inicio date, p_fim date, p_ordem ordem_inglesa DEFAULT NULL)\n  RETURNS TABLE (ordem, saldo_anterior, entradas, saidas, saldo_final, lancamentos)\n```\n\nChaves de Ordem: a interface e as URLs usam `arco-real | marca | nautas` (as mesmas do design system); o banco usa `arco_real | marca | nauta` (os nomes das tabelas). A conversão fica em `ORDEM_DB` / `ORDEM_UI` (`src/lib/formatar.js`).",
@@ -118,10 +273,22 @@
   },
   "testes": "Sem framework de testes no projeto. Validação: (1) `npm run db:reset` aplica as três migrations e o seed do zero; (2) checagens SQL diretas das constraints (valor <= 0, categoria de tipo trocado, exclusão de categoria em uso, exclusão de irmão com lançamento) e do RLS com a chave anon; (3) roteiro manual no navegador contra o Supabase local cobrindo cada critério de aceitação; (4) `npm run lint` e `npm run build`.",
   "riscos": [
-    { "risco": "Respostas do debate mudarem o modelo (vários corpos por Ordem, estorno em vez de edição, cobrança)", "mitigacao": "O MVP isola essas escolhas (coluna `ordem`, categorias em tabela, edição simples); cada mudança entra como migration nova e WP própria" },
-    { "risco": "Layout da ficha não corresponder ao formulário oficial", "mitigacao": "A spec declara o layout como provisório; todo o conteúdo está em `FichaIrmao.jsx`, único arquivo a trocar quando os modelos chegarem" },
-    { "risco": "Diferenças de impressão entre navegadores", "mitigacao": "CSS de impressão mínimo (A4, margens, quebra por folha) e conferência por PDF gerado no Chromium" },
-    { "risco": "Projeto Supabase novo sem exposição automática de tabelas para a API", "mitigacao": "A migration faz GRANT explícito para `authenticated` nas tabelas e na função" }
+    {
+      "risco": "Respostas do debate mudarem o modelo (vários corpos por Ordem, estorno em vez de edição, cobrança)",
+      "mitigacao": "O MVP isola essas escolhas (coluna `ordem`, categorias em tabela, edição simples); cada mudança entra como migration nova e WP própria"
+    },
+    {
+      "risco": "Layout da ficha não corresponder ao formulário oficial",
+      "mitigacao": "A spec declara o layout como provisório; todo o conteúdo está em `FichaIrmao.jsx`, único arquivo a trocar quando os modelos chegarem"
+    },
+    {
+      "risco": "Diferenças de impressão entre navegadores",
+      "mitigacao": "CSS de impressão mínimo (A4, margens, quebra por folha) e conferência por PDF gerado no Chromium"
+    },
+    {
+      "risco": "Projeto Supabase novo sem exposição automática de tabelas para a API",
+      "mitigacao": "A migration faz GRANT explícito para `authenticated` nas tabelas e na função"
+    }
   ],
   "rollout": "Migration aplicada com `npm run db:push` no projeto Supabase (ou colada no SQL Editor); não altera tabelas existentes. Deploy normal na Vercel, sem variáveis novas. Depois do deploy: revisar a lista de categorias em Ajustes e lançar o saldo inicial de cada Ordem.",
   "fora_escopo_tecnico": [

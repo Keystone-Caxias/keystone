@@ -9,7 +9,7 @@
 ## WP01 — Migration do caixa das Ordens e seed de exemplo
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 60min
 files:
   - supabase/migrations/20261110120000_caixa_das_ordens.sql
@@ -30,22 +30,24 @@ Criar no banco o que o caixa precisa: enums, `categoria_caixa`, `lancamento_caix
 7. `npm run db:reset` e checagens SQL das constraints e do RLS.
 
 ### Definição de Pronto
-- [ ] `npm run db:reset` aplica as três migrations e o seed sem erro
-- [ ] Banco recusa: valor zero ou negativo; categoria de tipo diferente do lançamento; exclusão de categoria em uso; exclusão de irmão com lançamento
-- [ ] `caixa_resumo` devolve uma linha por Ordem com saldo anterior, entradas, saídas e saldo final corretos para o seed
-- [ ] Com a chave anon, `select` em `categoria_caixa` e `lancamento_caixa` não devolve linhas e `insert` é recusado
-- [ ] Lançamento inserido por usuário autenticado sai com `criado_por` e `criado_por_email` preenchidos
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] `npm run db:reset` aplica as três migrations e o seed sem erro
+- [x] Banco recusa: valor zero ou negativo; categoria de tipo diferente do lançamento; exclusão de categoria em uso; exclusão de irmão com lançamento
+- [x] `caixa_resumo` devolve uma linha por Ordem com saldo anterior, entradas, saídas e saldo final corretos para o seed
+- [x] Com a chave anon, `select` em `categoria_caixa` e `lancamento_caixa` não devolve linhas e `insert` é recusado
+- [x] Lançamento inserido por usuário autenticado sai com `criado_por` e `criado_por_email` preenchidos
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. Migration aplicada com `supabase db reset` (três migrations + seed). Conferido por SQL: valor zero/negativo, categoria de tipo trocado, exclusão de categoria em uso, exclusão de irmão com lançamento, nome de categoria repetido e Ordem fora do enum são recusados. `caixa_resumo` bate com a soma manual do seed (Arco Real 2690,00 − 1145,90 = 1544,10). Pela API: anon recebe 42501 em select, insert e RPC; autenticado grava com `criado_por`/`criado_por_email` da sessão, mesmo enviando outro e-mail, e o UPDATE não troca a autoria. O seed também ganhou dois registros de Ordem para o irmão João (quadro e fichas em lote com mais de uma linha).
 
 ---
 
 ## WP02 — Formatação de dinheiro e consultas do caixa
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 45min
 files:
   - src/lib/formatar.js
@@ -61,22 +63,24 @@ Dar às telas as funções de apoio: conversão e formatação de dinheiro, chav
 2. `dados.js`: `listarCategorias`, `listarLancamentos` (paginada, com teto e sinal de truncado), `obterLancamento`, `resumoCaixa`, `listarIrmaosResumo`, `listarIrmaosDaOrdem`.
 
 ### Definição de Pronto
-- [ ] `lerMoeda` aceita `1.240,50`, `1240,50`, `1240.50`, `1240` e `R$ 12,5`; recusa texto, negativo e mais de duas casas
-- [ ] `formatarMoeda(124050)` devolve `R$ 1.240,50`; negativo sai com sinal de menos
-- [ ] `resumoCaixa` devolve centavos inteiros por Ordem, nas chaves de interface (`arco-real`, `marca`, `nautas`)
-- [ ] `listarLancamentos` percorre páginas de 1000 até acabar ou atingir o teto
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] `lerMoeda` aceita `1.240,50`, `1240,50`, `1240.50`, `1240` e `R$ 12,5`; recusa texto, negativo e mais de duas casas
+- [x] `formatarMoeda(124050)` devolve `R$ 1.240,50`; negativo sai com sinal de menos
+- [x] `resumoCaixa` devolve centavos inteiros por Ordem, nas chaves de interface (`arco-real`, `marca`, `nautas`)
+- [x] `listarLancamentos` percorre páginas de 1000 até acabar ou atingir o teto
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. `formatar.js`: mapas de Ordem, dinheiro em centavos (`centavos`, `centavosParaNumeric`, `formatarMoeda`, `lerMoeda`), datas no fuso de Brasília (`hojeISO`, `periodoDoAno`, `periodoDoMes`, `lerPeriodo`, `dataValida`), `lerOrdem`; `formatarDataHora` agora fixa o fuso e monta o texto por partes (mesmo resultado no servidor e no navegador). `dados.js`: consultas do caixa, `listarIrmaosResumo`, `listarIrmaosDaOrdem` e guarda de UUID em `obterIrmao`/`obterLancamento`. Verificado por script contra o Supabase local: 19 casos de `lerMoeda` e 6 de `formatarMoeda`; `resumoCaixa` em centavos nas chaves de interface; com 2500 lançamentos num período, `listarLancamentos` devolveu 2500 linhas únicas e a soma bateu com `caixa_resumo`. Lint sem erros.
 
 ---
 
 ## WP03 — Tesouraria: saldos, filtros e lista de lançamentos
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 90min
 files:
   - src/app/(app)/tesouraria/page.js
@@ -93,26 +97,29 @@ Substituir o placeholder da Tesouraria pela tela de consulta do caixa: saldo de 
 3. Ações da Topbar: "Extrato" (abre `/imprimir/extrato` com os filtros) e "Novo lançamento".
 
 ### Definição de Pronto
-- [ ] Sem parâmetros, a tela abre em todas as Ordens no ano civil corrente
-- [ ] Trocar de aba ou de período atualiza a URL, a lista e os cartões
-- [ ] Os cartões mostram os valores de `caixa_resumo` (não a soma da lista)
-- [ ] Tipo, categoria e busca filtram a lista e o "Total exibido" acompanha
-- [ ] Período inválido (data malformada ou `de` depois de `ate`) cai no padrão sem erro
-- [ ] Estado vazio factual quando não há lançamentos
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] Sem parâmetros, a tela abre em todas as Ordens no ano civil corrente
+- [x] Trocar de aba ou de período atualiza a URL, a lista e os cartões
+- [x] Os cartões mostram os valores de `caixa_resumo` (não a soma da lista)
+- [x] Tipo, categoria e busca filtram a lista e o "Total exibido" acompanha
+- [x] Período inválido (data malformada ou `de` depois de `ate`) cai no padrão sem erro
+- [x] Estado vazio factual quando não há lançamentos
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. `page.js` valida `ordem`/`de`/`ate` e carrega resumo (RPC), lançamentos e categorias; `TesourariaLista.jsx` traz um cartão por Ordem (saldo no fim do período, saldo anterior, entradas, saídas), abas de Ordem, período com atalhos (mês atual, ano atual), filtros de tipo/categoria/busca, tabela e total exibido. Verificado no navegador (Playwright) contra o Supabase local: abre em todas as Ordens no ano corrente (13 linhas do seed); aba Arco Real muda a URL e mostra 6 linhas sem a coluna Ordem; 'só saídas' deixa 3 linhas e o total acompanha (−R$ 1.145,90); busca 'anuidade' deixa 2 (R$ 840,00); mês atual sem lançamentos mostra o estado vazio e o cartão passa o saldo para 'saldo anterior'; março a maio dá saldo anterior R$ 2.690,00; período invertido desabilita o botão; URL com Ordem ou datas inválidas cai no padrão. Lint sem erros.
 
 ---
 
 ## WP04 — Tesouraria: novo lançamento, edição e exclusão
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 75min
 files:
+  - src/lib/useEnvio.js
   - src/app/(app)/tesouraria/actions.js
   - src/app/(app)/tesouraria/LancamentoForm.jsx
   - src/app/(app)/tesouraria/novo/page.js
@@ -129,16 +136,20 @@ Permitir registrar, corrigir e excluir lançamentos.
 3. Páginas `novo` (Ordem pré-selecionada pela URL, data de hoje) e `[id]/editar` (404 se não existir; mostra quem lançou e quando).
 
 ### Definição de Pronto
-- [ ] Entrada e saída novas aparecem na lista da Ordem certa, com Toast de confirmação
-- [ ] Valor inválido, data ausente, Ordem ou categoria ausentes devolvem mensagem no formulário sem perder o que foi digitado
-- [ ] Trocar o tipo troca as categorias oferecidas
-- [ ] Edição grava e o saldo muda; exclusão pede confirmação e remove
-- [ ] A tela de edição mostra o e-mail de quem lançou e a data do registro
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] Entrada e saída novas aparecem na lista da Ordem certa, com Toast de confirmação
+- [x] Valor inválido, data ausente, Ordem ou categoria ausentes devolvem mensagem no formulário sem perder o que foi digitado
+- [x] Depois de um erro de validação, todos os campos (inclusive Ordem, categoria e irmão) continuam com o que o oficial escolheu
+- [x] Trocar o tipo troca as categorias oferecidas
+- [x] Edição grava e o saldo muda; exclusão pede confirmação e remove
+- [x] A tela de edição mostra o e-mail de quem lançou e a data do registro
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: [Spec Architect] plano ajustado durante a WP: o teste no navegador mostrou que `<form action>` limpa o formulário quando a action devolve erro (um `<select>` controlado volta ao valor inicial; a Ordem mudaria sem aviso). Entra o hook `src/lib/useEnvio.js` em `files:` e na Definição de Pronto. O mesmo defeito existe nos formulários de irmão e de loja: vira a WP09.
+- 2026-11-10: concluída, movida para revisão. `actions.js` (`salvarLancamento`, `excluirLancamento`), `LancamentoForm.jsx` (formulário + exclusão com Dialog), páginas `novo` e `[id]/editar`, hook `useEnvio`. Verificado no navegador contra o Supabase local: saída de R$ 75,50 na Marca baixou o saldo de 1.150,00 para 1.074,50 com Toast; entrada em Nautas com data de 2025, aberta a partir da lista da Marca/2026, voltou para a lista de Nautas/2025 mostrando o lançamento; valor 'abc' e '0', categoria ausente e troca de tipo devolvem mensagem e mantêm descrição, Ordem e categoria escolhidas; edição de 1.240,50 para 1.000,00 refletiu no saldo; exclusão pede confirmação e zera o período; a tela de edição mostra 'Lançado por escriba@keystone.local em …' e a última alteração; id inexistente ou malformado devolve 404. Lint sem erros.
 
 ---
 
@@ -284,4 +295,34 @@ Fechar o MVP: saldo das Ordens no Painel, mensagem clara ao tentar excluir irmã
 
 ---
 
-<!-- Adicione mais WPs seguindo o mesmo formato. Numere em sequência: WP09, ... -->
+## WP09 — Cadastro e Lojas: erro ao salvar não apaga o formulário
+
+```yaml
+lane: planejado
+estimativa: 30min
+files:
+  - src/app/(app)/cadastro/IrmaoForm.jsx
+  - src/app/(app)/lojas/LojaForm.jsx
+depende_de: [WP04]
+```
+
+### Objetivo
+Corrigir, nos formulários que já existiam, a perda do que foi digitado quando o salvamento devolve erro (por exemplo CPF repetido), usando o hook `useEnvio` criado na WP04.
+
+### Passos
+1. `IrmaoForm.jsx`: trocar `useActionState` + `<form action>` por `useEnvio` + `<form onSubmit>`.
+2. `LojaForm.jsx`: o mesmo no formulário da loja (o formulário de exclusão não tem campos digitados e fica como está).
+
+### Definição de Pronto
+- [ ] Cadastrar irmão com CPF já existente mostra o erro e mantém nome, e-mail, loja e os blocos de Ordem preenchidos
+- [ ] Salvar loja sem potência mostra o erro e mantém nome e endereço
+- [ ] Criar e editar irmão e loja continuam funcionando, com o Toast de confirmação
+- [ ] `npm run lint` passa
+- [ ] Nenhum arquivo fora de `files:` foi tocado
+
+### Log
+- 2026-11-10: WP criada (defeito encontrado no teste da WP04)
+
+---
+
+<!-- Adicione mais WPs seguindo o mesmo formato. Numere em sequência: WP10, ... -->

@@ -16,7 +16,7 @@
 | # | Feature | Domínio | Status | Progresso | Pasta |
 |---|---------|---------|--------|-----------|-------|
 | 001 | Modelagem do banco de dados | dados | 🟡 | 0/3 WPs prontas (3 em revisão) | `current/001-modelagem-banco-dados/` |
-| 002 | MVP: fichas preenchidas e caixa das Ordens | admin | 🟡 | 0/8 WPs prontas | `current/002-mvp-fichas-e-caixa/` |
+| 002 | MVP: fichas preenchidas e caixa das Ordens | admin | 🟡 | 0/9 WPs prontas | `current/002-mvp-fichas-e-caixa/` |
 
 ## Próximas (priorizadas)
 
