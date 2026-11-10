@@ -1,9 +1,10 @@
-import { Card } from '@/ds';
+import { Card, Tag } from '@/ds';
 import { Conteudo } from '@/components/Conteudo';
 import { LinkButton } from '@/components/LinkButton';
 import { Metric } from '@/components/Metric';
 import { Topbar } from '@/components/Topbar';
-import { contagens, irmaosRecentes, listarLojas, membrosPorLoja } from '@/lib/dados';
+import { contagens, irmaosRecentes, listarLojas, membrosPorLoja, resumoCaixa } from '@/lib/dados';
+import { ORDENS, formatarMoeda } from '@/lib/formatar';
 import { createClient } from '@/lib/supabase/server';
 import { PainelRecentes } from './PainelRecentes';
 
@@ -11,11 +12,12 @@ export const metadata = { title: 'Painel' };
 
 export default async function PainelPage() {
   const supabase = await createClient();
-  const [c, recentes, lojas, porLoja] = await Promise.all([
+  const [c, recentes, lojas, porLoja, caixa] = await Promise.all([
     contagens(supabase),
     irmaosRecentes(supabase, 6),
     listarLojas(supabase),
     membrosPorLoja(supabase),
+    resumoCaixa(supabase), // sem período: posição atual de cada caixa
   ]);
   const composicao = [
     ['arco-real', 'Arco Real', c.arco_real, 'var(--order-arco-real)'],
@@ -23,7 +25,6 @@ export default async function PainelPage() {
     ['nautas', 'Nautas da Arca Real', c.nauta, 'var(--order-nautas)'],
   ];
   const maior = Math.max(1, ...composicao.map((x) => x[2]));
-  const semOrdem = Math.max(0, c.macom - new Set().size);
 
   return (
     <>
@@ -37,13 +38,29 @@ export default async function PainelPage() {
           <Metric eyebrow="Nautas" value={c.nauta} hint="nautas elevados" />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 'var(--space-6)', alignItems: 'start' }}>
-          <Card eyebrow="Cadastro" title="Últimos cadastros" padding="0"
+          <Card eyebrow="Cadastro" title="Últimos cadastros"
             actions={<LinkButton href="/cadastro" size="sm" variant="ghost" iconRight="arrow-right">Ver todos</LinkButton>}>
-            <div style={{ padding: 'var(--space-4) 0 var(--space-2)' }}>
+            {/* A margem negativa leva a tabela até as bordas sem zerar o padding do cabeçalho do Card. */}
+            <div style={{ margin: 'calc(var(--space-5) * -1)', padding: 'var(--space-4) 0 var(--space-2)' }}>
               <PainelRecentes rows={recentes} />
             </div>
           </Card>
           <div style={{ display: 'grid', gap: 'var(--space-6)' }}>
+            <Card eyebrow="Tesouraria" title="Caixa das Ordens"
+              actions={<LinkButton href="/tesouraria" size="sm" variant="ghost" iconRight="arrow-right">Tesouraria</LinkButton>}>
+              <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+                {Object.entries(ORDENS).map(([ordem, nome]) => {
+                  const saldo = caixa[ordem]?.saldoFinal ?? 0;
+                  return (
+                    <div key={ordem} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                      <Tag order={ordem}>{nome}</Tag>
+                      <span className="numeric" style={{ fontSize: 'var(--fs-sm)', color: saldo < 0 ? 'var(--status-danger-fg)' : 'var(--text-strong)' }}>{formatarMoeda(saldo)}</span>
+                    </div>
+                  );
+                })}
+                <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>Saldo atual de cada caixa: entradas menos saídas já lançadas.</span>
+              </div>
+            </Card>
             <Card eyebrow="Composição" title="Irmãos por Ordem">
               <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
                 {composicao.map(([k, label, n, cor]) => (
@@ -56,7 +73,6 @@ export default async function PainelPage() {
                     </div>
                   </div>
                 ))}
-                {semOrdem === c.macom && c.macom > 0 && null}
               </div>
             </Card>
             <Card eyebrow="Lojas simbólicas" title="Irmãos por loja" accent="nautas"

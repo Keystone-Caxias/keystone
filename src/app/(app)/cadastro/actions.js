@@ -97,13 +97,19 @@ export async function salvarIrmao(prevState, formData) {
   redirect(`/cadastro?msg=${id ? 'atualizado' : 'criado'}`);
 }
 
-/** Exclui um irmão (os registros de Ordem caem em cascata). */
-export async function excluirIrmao(formData) {
+/**
+ * Exclui um irmão (os registros de Ordem caem em cascata). Usado via useActionState.
+ * Irmão com lançamentos no caixa não pode ser excluído (FK RESTRICT em lancamento_caixa).
+ */
+export async function excluirIrmao(prevState, formData) {
   const id = texto(formData, 'id');
-  if (!id) return;
+  if (!id) return { erro: 'Irmão não identificado.' };
   const supabase = await createClient();
   const { error } = await supabase.from('macom').delete().eq('id', id);
-  if (error) throw new Error(traduzirErro(error));
+  if (error) {
+    if (error.code === '23503') return { erro: 'Este irmão tem lançamentos no caixa e não pode ser excluído. Os lançamentos aparecem na Tesouraria, buscando pelo nome dele.' };
+    return { erro: traduzirErro(error) };
+  }
   revalidar();
   redirect('/cadastro?msg=excluido');
 }

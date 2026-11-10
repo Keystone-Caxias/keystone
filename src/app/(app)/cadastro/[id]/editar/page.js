@@ -17,7 +17,12 @@ export default async function EditarIrmaoPage({ params }) {
   return (
     <>
       <Topbar eyebrow="Cadastro de irmãos" title={irmao.nome}
-        actions={<LinkButton href="/cadastro" size="sm" variant="secondary">Voltar</LinkButton>} />
+        actions={(
+          <>
+            <LinkButton href={`/imprimir/ficha/${irmao.id}`} size="sm" variant="secondary" iconLeft="printer">Emitir ficha</LinkButton>
+            <LinkButton href="/cadastro" size="sm" variant="secondary">Voltar</LinkButton>
+          </>
+        )} />
       <Conteudo>
         <IrmaoForm irmao={irmao} lojas={lojas} />
         <ExcluirIrmao id={irmao.id} nome={irmao.nome} />

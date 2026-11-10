@@ -1,6 +1,8 @@
 # Keystone · Plataforma das Ordens Inglesas
 
-Plataforma interna de **cadastro de irmãos, lojas simbólicas e registros de Arco Real, Mestre Maçom da Marca e Nautas da Arca Real**. Usada por oficiais (Escriba, Tesoureiro, Secretário).
+Plataforma interna de **cadastro de irmãos, lojas simbólicas e registros de Arco Real, Mestre Maçom da Marca e Nautas da Arca Real**, com **emissão de fichas preenchidas** e **caixa de cada Ordem**. Usada por oficiais (Escriba, Tesoureiro, Secretário).
+
+> **MVP em avaliação.** Várias regras de negócio ainda estão em aberto e o sistema adota um comportamento provisório para cada uma. A lista está em [`.claude/specs/current/002-mvp-fichas-e-caixa/spec.html`](.claude/specs/current/002-mvp-fichas-e-caixa/spec.html), seção "Precisa esclarecer" (abra o arquivo no navegador).
 
 - **Front-end:** Next.js (App Router, JavaScript/JSX) hospedado na **Vercel**
 - **Banco e autenticação:** **Supabase** (Postgres + Auth), com RLS ligado
@@ -16,7 +18,16 @@ Plataforma interna de **cadastro de irmãos, lojas simbólicas e registros de Ar
 | `/cadastro` | Lista de irmãos com busca (nome, CPF, CIM) e filtros; painel de detalhe |
 | `/cadastro/novo`, `/cadastro/[id]/editar` | Formulário completo (dados básicos, loja, datas simbólicas, Arco Real, Marca, Nauta) e exclusão |
 | `/lojas`, `/lojas/nova`, `/lojas/[id]/editar` | Lojas simbólicas (GOB, CMSB, COMAB) |
-| `/admissoes`, `/tesouraria`, `/relatorios`, `/ajustes` | Sem especificação recebida: exibem o estado vazio do design system |
+| `/tesouraria` | Caixa de cada Ordem: saldo anterior, entradas, saídas e saldo no período; lista de lançamentos com filtros por Ordem, período, tipo, categoria e busca |
+| `/tesouraria/novo`, `/tesouraria/[id]/editar` | Registrar, corrigir e excluir lançamento (entrada ou saída) |
+| `/relatorios` | Atalhos para os documentos: fichas em lote, quadro de irmãos e extrato do caixa |
+| `/ajustes` | Categorias do caixa (criar, renomear, excluir) |
+| `/imprimir/ficha/[id]` | Ficha de um irmão para impressão: cadastral ou de uma Ordem (`?modelo=`) |
+| `/imprimir/fichas`, `/imprimir/quadro` | Fichas de todos os irmãos de uma Ordem e quadro de irmãos (`?ordem=`) |
+| `/imprimir/extrato` | Extrato do caixa com saldo acumulado (`?ordem=&de=&ate=`) |
+| `/admissoes` | Sem especificação recebida: exibe o estado vazio do design system |
+
+As telas em `/imprimir` são folhas A4 sem o menu lateral. O botão **Imprimir** abre a janela de impressão do navegador; para gerar PDF, escolha a opção de salvar como PDF nessa janela. Na ficha de uma Ordem de que o irmão ainda não participa, os campos da Ordem saem em branco para preenchimento à mão.
 
 ## Rodar localmente
 
@@ -49,7 +60,8 @@ Para apontar para um projeto hospedado em vez do local, siga a seção seguinte.
    - **CLI:** `npx supabase login`, `npx supabase link --project-ref <ref>` e `npm run db:push`.
    - **SQL Editor** do painel: cole e execute cada arquivo, do mais antigo para o mais novo.
 3. (Opcional) Dados de exemplo: execute `supabase/seed.sql` no SQL Editor.
-4. Crie o primeiro usuário em **Authentication → Users → Add user** (e-mail e senha). Todo usuário autenticado tem acesso total às cinco tabelas; a chave pública sem sessão não lê nada (RLS).
+4. Crie o primeiro usuário em **Authentication → Users → Add user** (e-mail e senha). Todo usuário autenticado tem acesso total às tabelas de cadastro e do caixa; a chave pública sem sessão não lê nada (RLS).
+5. Antes de usar o caixa: revise a lista de categorias em **Ajustes** (a migration traz uma lista inicial provisória) e lance o saldo de abertura de cada Ordem como uma entrada na categoria "Saldo inicial".
 
 ## Publicar na Vercel
 
@@ -74,9 +86,10 @@ Para apontar para um projeto hospedado em vez do local, siga a seção seguinte.
 
 ```
 src/app/            rotas (App Router); (app)/ é a área autenticada, login/ é pública
-src/components/     Shell, Sidebar, Topbar, Emblema e peças de layout
+src/app/imprimir/   documentos para impressão (fichas, quadro, extrato), autenticados e sem o Shell
+src/components/     Shell, Sidebar, Topbar, Emblema, Folha e FichaIrmao (documentos) e peças de layout
 src/ds/             design system vendorizado (tokens + componentes React)
-src/lib/            cliente Supabase (server), consultas e formatação
+src/lib/            cliente Supabase (server), consultas, formatação (datas, dinheiro) e envio de formulários
 src/proxy.js        renova a sessão e redireciona quem não está autenticado
 supabase/           migrations e seed
 .claude/skills/ordens-inglesas-design/   espelho do projeto no Claude Design (fonte do design system)

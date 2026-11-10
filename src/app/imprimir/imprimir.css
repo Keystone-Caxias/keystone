@@ -1,0 +1,52 @@
+/* Área de impressão: na tela, folhas A4 sobre fundo neutro; no papel, só o conteúdo das folhas.
+   É o único CSS de página do app porque @page e @media print não cabem em estilo inline. */
+
+.area-impressao {
+  min-height: 100%;
+  background: var(--surface-sunken);
+  font-family: var(--font-body);
+  padding-bottom: var(--space-8);
+}
+
+.folha {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 210mm;
+  max-width: calc(100% - 2 * var(--space-4));
+  min-height: 297mm;
+  margin: var(--space-6) auto 0;
+  padding: 14mm 15mm;
+  background: var(--surface-card);
+  border: var(--border-hairline);
+  box-shadow: var(--shadow-2);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.folha table { width: 100%; border-collapse: collapse; }
+.folha thead { display: table-header-group; } /* repete o cabeçalho da tabela a cada página */
+
+@page {
+  size: A4;
+  margin: 14mm 15mm;
+}
+
+@media print {
+  html, body { height: auto; background: #fff; }
+  .nao-imprimir { display: none !important; }
+  .area-impressao { min-height: 0; padding: 0; background: #fff; }
+  .folha {
+    display: block;
+    width: auto;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+  .folha:last-of-type { break-after: auto; }
+  .nao-quebrar, .folha tr { break-inside: avoid; }
+}

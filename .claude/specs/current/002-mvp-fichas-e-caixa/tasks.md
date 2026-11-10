@@ -156,7 +156,7 @@ Permitir registrar, corrigir e excluir lançamentos.
 ## WP05 — Ajustes: categorias do caixa
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 60min
 files:
   - src/app/(app)/ajustes/page.js
@@ -174,22 +174,25 @@ Substituir o placeholder de Ajustes pela manutenção das categorias do caixa.
 3. `page.js`: carrega as categorias e monta a tela.
 
 ### Definição de Pronto
-- [ ] Criar categoria de entrada e de saída; ambas passam a aparecer no formulário de lançamento do tipo correspondente
-- [ ] Nome repetido no mesmo tipo é recusado com mensagem
-- [ ] Renomear funciona e reflete nos lançamentos existentes
-- [ ] Excluir categoria sem uso funciona; categoria em uso mostra a explicação e não é excluída
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] Criar categoria de entrada e de saída; ambas passam a aparecer no formulário de lançamento do tipo correspondente
+- [x] Nome repetido no mesmo tipo é recusado com mensagem
+- [x] Renomear funciona e reflete nos lançamentos existentes
+- [x] Excluir categoria sem uso funciona; categoria em uso mostra a explicação e não é excluída
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. `actions.js` (`salvarCategoria`, `excluirCategoria`), `CategoriasCaixa.jsx` (nova categoria, uma tabela por tipo, renomear e excluir em Dialog), `page.js`. Verificado no navegador contra o Supabase local: criar 'Rifa beneficente' (entrada) e 'Correios' (saída), ambas aparecem no formulário de lançamento do tipo certo; 'correios' repetido é recusado com mensagem e o campo fica como estava; renomear 'Anuidade' refletiu nos 2 lançamentos do Arco Real; renomear para um nome existente é recusado dentro do Dialog; excluir 'Anuidade' (em uso) mostra a explicação e nada some; excluir as duas categorias sem uso funciona. Lint sem erros.
+- 2026-11-10: ajuste depois do teste visual (ainda em revisão): os dois cartões de categorias usavam `padding="0"`, que no `Card` do design system também zera o padding do cabeçalho e encostava o título na borda. Passam a usar o padding normal com margem negativa no conteúdo. Retestado no navegador.
 
 ---
 
 ## WP06 — Área de impressão e fichas do irmão
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 90min
 files:
   - src/app/imprimir/layout.js
@@ -214,23 +217,25 @@ Emitir fichas preenchidas: ficha cadastral e ficha por Ordem de um irmão, e as 
 4. Cadastro: "Emitir ficha" na linha da tabela, no painel de detalhe e na Topbar da edição.
 
 ### Definição de Pronto
-- [ ] `/imprimir/ficha/<id>` mostra a ficha cadastral com todos os dados do irmão e das Ordens de que participa
-- [ ] `?modelo=arco-real|marca|nautas` mostra a ficha da Ordem; se o irmão não participa, os campos da Ordem saem em branco
-- [ ] `/imprimir/fichas?ordem=<ordem>` gera uma folha por irmão da Ordem; Ordem inválida ou ausente mostra aviso em vez de erro
-- [ ] Na impressão (PDF pelo Chromium) a barra não aparece e cada ficha começa em página nova
-- [ ] Id inexistente devolve 404; sem sessão, redireciona para o login
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] `/imprimir/ficha/<id>` mostra a ficha cadastral com todos os dados do irmão e das Ordens de que participa
+- [x] `?modelo=arco-real|marca|nautas` mostra a ficha da Ordem; se o irmão não participa, os campos da Ordem saem em branco
+- [x] `/imprimir/fichas?ordem=<ordem>` gera uma folha por irmão da Ordem; Ordem inválida ou ausente mostra aviso em vez de erro
+- [x] Na impressão (PDF pelo Chromium) a barra não aparece e cada ficha começa em página nova
+- [x] Id inexistente devolve 404; sem sessão, redireciona para o login
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. Área `/imprimir` (layout com sessão obrigatória e sem Shell, CSS de impressão A4, barra que não sai no papel), `Folha.jsx` (cabeçalho, seções, rodapé de emissão e estilos de tabela impressa), `FichaIrmao.jsx` (modelos cadastral e por Ordem; campo vazio vira linha em branco; quadro de foto), páginas `ficha/[id]` e `fichas`, e 'Emitir ficha' na linha e no painel do Cadastro e na Topbar da edição. Verificado no navegador contra o Supabase local: ficha cadastral do irmão com duas Ordens mostra os dois blocos; irmão sem Ordens mostra o aviso; modelo de Ordem sem registro sai com os campos da Ordem em branco; modelo inválido cai no cadastral; lote do Arco Real gera 2 folhas e o de Nautas 1; Ordem ausente ou inválida mostra aviso e desabilita Imprimir; PDF pelo Chromium com 1 página (ficha) e 2 páginas (lote), sem a barra; id inexistente ou malformado devolve 404; sem sessão redireciona para /login. Lint sem erros.
 
 ---
 
 ## WP07 — Quadro de irmãos, extrato do caixa e tela Relatórios
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 75min
 files:
   - src/app/imprimir/quadro/page.js
@@ -248,22 +253,24 @@ Completar os documentos imprimíveis e dar um ponto de entrada único em Relató
 3. `relatorios/page.js`: cartões "Fichas", "Quadro de irmãos" e "Extrato do caixa" (formulário GET com Ordem e período).
 
 ### Definição de Pronto
-- [ ] Quadro lista só os irmãos da Ordem pedida, em ordem alfabética, com o total
-- [ ] No extrato, saldo anterior + entradas − saídas = saldo final, e o saldo acumulado da última linha é igual ao saldo final
-- [ ] Extrato de período sem lançamentos informa isso e mantém os saldos
-- [ ] Relatórios leva a cada documento com os parâmetros certos
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] Quadro lista só os irmãos da Ordem pedida, em ordem alfabética, com o total
+- [x] No extrato, saldo anterior + entradas − saídas = saldo final, e o saldo acumulado da última linha é igual ao saldo final
+- [x] Extrato de período sem lançamentos informa isso e mantém os saldos
+- [x] Relatórios leva a cada documento com os parâmetros certos
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. `quadro/page.js` (lista nominal por Ordem com corpo, loja simbólica, data de ingresso e telefone), `extrato/page.js` (posição do período calculada no banco, lançamentos em ordem cronológica com saldo acumulado, totais; sem Ordem, uma folha por Ordem), `relatorios/page.js` (fichas em lote, quadro e formulário do extrato). Verificado no navegador contra o Supabase local: quadro do Arco Real com 2 irmãos em ordem alfabética, Marca 2, Nautas 1, Ordem inválida mostra aviso; extrato conferido por script em quatro recortes (Marca mar-jun, as três Ordens no ano, Nautas em agosto sem lançamentos): saldo anterior + entradas − saídas = saldo final, soma das colunas igual aos totais e último saldo acumulado igual ao saldo final; parâmetros inválidos caem no padrão; PDF das três Ordens com 3 páginas; Voltar devolve a Relatórios ou à Tesouraria com os mesmos filtros, conforme a origem. Lint sem erros.
 
 ---
 
 ## WP08 — Painel com saldos, exclusão protegida e documentação
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 45min
 files:
   - src/app/(app)/page.js
@@ -284,21 +291,23 @@ Fechar o MVP: saldo das Ordens no Painel, mensagem clara ao tentar excluir irmã
 4. `npm run lint` e `npm run build`.
 
 ### Definição de Pronto
-- [ ] Painel mostra o saldo atual de cada Ordem, igual ao da Tesouraria sem filtro de período
-- [ ] Excluir irmão com lançamentos mostra a mensagem na própria tela e nada é apagado; irmão sem lançamentos continua excluível
-- [ ] README e CLAUDE.md descrevem as telas e convenções novas
-- [ ] `npm run lint` e `npm run build` terminam sem erro
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] Painel mostra o saldo atual de cada Ordem, igual ao da Tesouraria sem filtro de período
+- [x] Excluir irmão com lançamentos mostra a mensagem na própria tela e nada é apagado; irmão sem lançamentos continua excluível
+- [x] README e CLAUDE.md descrevem as telas e convenções novas
+- [x] `npm run lint` e `npm run build` terminam sem erro
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada
+- 2026-11-10: iniciada
+- 2026-11-10: concluída, movida para revisão. Painel com o cartão 'Caixa das Ordens' (saldo atual por Ordem, igual ao da Tesouraria com período aberto) e sem o código morto; cabeçalho do cartão 'Últimos cadastros' deixou de encostar na borda; `excluirIrmao` devolve `{ erro }` e o cartão mostra a recusa quando o irmão tem lançamentos (nada é apagado), irmão sem lançamentos continua excluível; README e CLAUDE.md atualizados. `npm run lint` e `npm run build` sem erro; todos os roteiros de navegador das WP03 a WP09 repetidos contra o build de produção em banco recriado com `supabase db reset`.
 
 ---
 
 ## WP09 — Cadastro e Lojas: erro ao salvar não apaga o formulário
 
 ```yaml
-lane: planejado
+lane: revisão
 estimativa: 30min
 files:
   - src/app/(app)/cadastro/IrmaoForm.jsx
@@ -314,14 +323,16 @@ Corrigir, nos formulários que já existiam, a perda do que foi digitado quando 
 2. `LojaForm.jsx`: o mesmo no formulário da loja (o formulário de exclusão não tem campos digitados e fica como está).
 
 ### Definição de Pronto
-- [ ] Cadastrar irmão com CPF já existente mostra o erro e mantém nome, e-mail, loja e os blocos de Ordem preenchidos
-- [ ] Salvar loja sem potência mostra o erro e mantém nome e endereço
-- [ ] Criar e editar irmão e loja continuam funcionando, com o Toast de confirmação
-- [ ] `npm run lint` passa
-- [ ] Nenhum arquivo fora de `files:` foi tocado
+- [x] Cadastrar irmão com CPF já existente mostra o erro e mantém nome, e-mail, loja e os blocos de Ordem preenchidos
+- [x] Salvar loja sem potência mostra o erro e mantém nome e endereço
+- [x] Criar e editar irmão e loja continuam funcionando, com o Toast de confirmação
+- [x] `npm run lint` passa
+- [x] Nenhum arquivo fora de `files:` foi tocado
 
 ### Log
 - 2026-11-10: WP criada (defeito encontrado no teste da WP04)
+- 2026-11-10: iniciada (fora de ordem, antes de fechar a WP08, para que o `npm run build` final cubra tudo)
+- 2026-11-10: concluída, movida para revisão. `IrmaoForm.jsx` e `LojaForm.jsx` enviam por `useEnvio`. Verificado no navegador: CPF repetido mostra o erro e mantém nome, e-mail, loja e o bloco do Arco Real; corrigido o CPF, o irmão é criado e depois editado com Toast; loja sem potência mostra o erro e mantém nome e endereço; criar, editar e excluir loja continuam funcionando. Lint sem erros.
 
 ---
 

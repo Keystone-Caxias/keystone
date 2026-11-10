@@ -3,12 +3,14 @@ import { useActionState, useState } from 'react';
 import { Button, Card, Dialog, Input, Select } from '@/ds';
 import { LinkButton } from '@/components/LinkButton';
 import { POTENCIAS } from '@/lib/formatar';
+import { useEnvio } from '@/lib/useEnvio';
 import { excluirLoja, salvarLoja } from './actions';
 
 export function LojaForm({ loja }) {
-  const [state, action, pending] = useActionState(salvarLoja, { erro: null });
+  // useEnvio: se o salvamento devolver erro, o formulário não é limpo.
+  const [state, enviar, pending] = useEnvio(salvarLoja);
   return (
-    <form action={action} style={{ display: 'grid', gap: 'var(--space-6)', maxWidth: 'var(--width-form-max)' }}>
+    <form onSubmit={enviar} style={{ display: 'grid', gap: 'var(--space-6)', maxWidth: 'var(--width-form-max)' }}>
       {loja && <input type="hidden" name="id" value={loja.id} />}
       <Card eyebrow="Loja simbólica" title={loja ? 'Dados da loja' : 'Nova loja'}>
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
