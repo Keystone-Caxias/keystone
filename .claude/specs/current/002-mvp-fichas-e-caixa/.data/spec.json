@@ -24,16 +24,23 @@
       "Ficha cadastral do irmão e ficha de registro por Ordem, preenchidas com os dados do cadastro e prontas para imprimir em A4 (ou salvar em PDF pelo navegador); campo sem valor sai como linha em branco para preenchimento à mão",
       "Relatórios imprimíveis: fichas em lote de todos os irmãos de uma Ordem, quadro de irmãos por Ordem e extrato do caixa por Ordem e período (com saldo acumulado)",
       "Painel: saldo atual do caixa de cada Ordem",
-      "Proteção dos dados financeiros: irmão com lançamentos vinculados não pode ser excluído do cadastro"
+      "Proteção dos dados financeiros: irmão com lançamentos vinculados não pode ser excluído do cadastro",
+      "Controle de acesso: lista de oficiais autorizados com papéis (administrador, oficial, somente leitura), mantida em Ajustes; conta fora da lista não lê nem grava",
+      "Lançamentos com número sequencial, forma de pagamento opcional e recusa de data futura",
+      "Histórico do caixa: registro inalterável de criação, alteração e exclusão de lançamentos",
+      "Fechamento do caixa por Ordem (administrador): período fechado não aceita alterações",
+      "Recibo imprimível das entradas, com número e valor por extenso",
+      "Situação do irmão em cada Ordem (ativo, licenciado, desligado) e data de falecimento; quadro, fichas em lote e contagens consideram só o quadro atual",
+      "Validação do cadastro: dígitos verificadores do CPF e coerência das datas",
+      "Preparação para produção: cabeçalhos de segurança, bloqueio de indexação, região da Vercel, CI e roteiro de publicação no README"
     ],
     "nao_inclui": [
       "Fluxo de admissão (proposta, etapas, aprovação): a tela Admissões continua em definição",
       "Cobrança de anuidades, controle de inadimplência e avisos por e-mail",
-      "Emissão de recibo numerado",
       "Anexo de comprovantes e upload de foto (a foto segue como URL)",
-      "Perfis de acesso por cargo ou por Ordem (todo oficial autenticado continua com acesso total)",
       "Reprodução fiel dos formulários oficiais de cada Ordem (depende dos modelos, ver perguntas em aberto)",
-      "Fechamento de período, prestação de contas formal e conciliação bancária"
+      "Acesso separado por Ordem ou por cargo (os papéis valem para as três Ordens)",
+      "Prestação de contas formal e conciliação bancária"
     ]
   },
   "criterios_aceitacao": [
@@ -96,6 +103,34 @@
     {
       "texto": "`npm run db:reset`, `npm run lint` e `npm run build` terminam sem erro",
       "atendido": false
+    },
+    {
+      "texto": "Conta autenticada que não consta em `oficial` não lê nenhuma linha e vê a tela Acesso pendente; o papel somente leitura consulta e imprime mas toda gravação é recusada com mensagem",
+      "atendido": false
+    },
+    {
+      "texto": "Só o administrador autoriza oficiais, troca papéis e fecha ou reabre o caixa; o último administrador não pode ser rebaixado nem removido",
+      "atendido": false
+    },
+    {
+      "texto": "Com o caixa de uma Ordem fechado até uma data, criar, alterar, mover e excluir lançamento com data até ela é recusado pelo banco e a tela explica",
+      "atendido": false
+    },
+    {
+      "texto": "Cada criação, alteração e exclusão de lançamento aparece no histórico com autor, hora e o que mudou; o histórico não aceita escrita pela API",
+      "atendido": false
+    },
+    {
+      "texto": "Uma entrada emite recibo com número, valor em algarismos e por extenso; saída não emite",
+      "atendido": false
+    },
+    {
+      "texto": "Irmão desligado de uma Ordem ou falecido não aparece no quadro nem nas fichas em lote e não entra nas contagens; licenciado aparece com a situação",
+      "atendido": false
+    },
+    {
+      "texto": "CPF com dígito verificador errado e datas futuras ou fora de ordem são recusados com mensagem, sem perder o que foi digitado",
+      "atendido": false
     }
   ],
   "cenarios": {
@@ -146,23 +181,23 @@
     },
     {
       "pergunta": "ACESSO. Quem pode ver e alterar o quê? Provisório no MVP: todo oficial autenticado vê e altera tudo, nas três Ordens (como já era no cadastro). Alternativas: perfis por cargo (Escriba/Secretário x Tesoureiro), acesso por Ordem, perfil somente leitura.",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10 (refino do MVP, revisável pelos três irmãos): só contas autorizadas (tabela `oficial`) acessam os dados, com três papéis: administrador (autoriza oficiais, fecha e reabre o caixa), oficial (cadastra e altera) e somente leitura. Acesso separado por Ordem ou por cargo não foi implementado e segue no roadmap."
     },
     {
       "pergunta": "CAIXA, correção de lançamentos. Um lançamento errado pode ser editado e excluído livremente, ou deve ser corrigido por estorno (o original fica intocado)? Provisório no MVP: edição e exclusão livres; o sistema guarda quem criou e a data da última alteração, mas não o histórico de alterações.",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10: edição e exclusão continuam permitidas em período aberto, mas toda criação, alteração e exclusão fica registrada no histórico do caixa (autor, hora, conteúdo antes e depois), que não pode ser editado. Em período fechado o banco recusa qualquer alteração; a correção é feita por lançamento de ajuste com data posterior ou reabrindo o período."
     },
     {
       "pergunta": "CAIXA, exercício e fechamento. O exercício financeiro é o ano civil? Existe fechamento (mensal ou anual) depois do qual nada mais pode ser alterado, e prestação de contas formal? Provisório no MVP: sem fechamento; a tela abre no ano civil corrente e o período é um filtro livre.",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10: o período continua sendo filtro livre (a tela abre no ano civil). Passa a existir fechamento por Ordem: o administrador define a data até a qual o caixa está fechado e nada com data até ela pode ser criado, alterado ou excluído. Não há prestação de contas formal além do extrato impresso."
     },
     {
       "pergunta": "CAIXA, saldo inicial. Qual a data de corte e o saldo de abertura de cada Ordem? Provisório no MVP: lançar uma entrada na categoria \"Saldo inicial\".",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10: lançar uma entrada na categoria \"Saldo inicial\" com a data de corte e fechar o caixa da Ordem até essa data. A data e o valor de cada Ordem são dados da implantação, não regra do sistema."
     },
     {
       "pergunta": "CAIXA, categorias. Quais são as categorias definitivas de entrada e de saída, e são as mesmas para as três Ordens? Provisório no MVP: lista inicial única para as três Ordens, editável em Ajustes. Entradas: Saldo inicial, Anuidade, Joia, Taxa de admissão, Doação, Outras entradas. Saídas: Taxas e repasses, Paramentos e materiais, Aluguel e manutenção, Ágape, Beneficência, Outras saídas.",
@@ -171,8 +206,8 @@
     },
     {
       "pergunta": "CAIXA, dinheiro em espécie x banco. Cada Ordem tem conta bancária própria? É preciso separar caixa físico de conta, ou registrar a forma de pagamento (dinheiro, PIX, transferência)? Provisório no MVP: um único saldo por Ordem, sem forma de pagamento.",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10: um único saldo por Ordem. Cada lançamento pode informar a forma de pagamento (dinheiro, PIX, transferência, cartão, cheque, outro), opcional e apenas informativa; não há saldos separados de caixa físico e conta."
     },
     {
       "pergunta": "COBRANÇA. O sistema deve controlar o que cada irmão deve (anuidade ou mensalidade por Ordem, valor, vencimento, situação quite/pendente/vencido), como no protótipo do design? Provisório no MVP: só registra o que foi efetivamente recebido e pago; não há previsão nem inadimplência.",
@@ -181,13 +216,13 @@
     },
     {
       "pergunta": "RECIBOS E COMPROVANTES. O sistema deve emitir recibo numerado ao registrar uma entrada (qual a numeração)? Deve guardar o comprovante ou a nota de cada saída? Provisório no MVP: nenhum dos dois.",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10: todo lançamento recebe um número sequencial único (nunca reaproveitado) e toda entrada emite recibo imprimível com esse número, o valor por extenso e linha para assinatura do Tesoureiro. Guarda de comprovantes e notas das saídas continua fora do sistema."
     },
     {
       "pergunta": "IRMÃO QUE SAI. Irmão desligado, licenciado ou falecido deve ser excluído ou marcado com uma situação (por Ordem)? Provisório no MVP: não há situação; exclusão continua possível, exceto quando o irmão tem lançamentos no caixa (aí o sistema bloqueia).",
-      "resolvido": false,
-      "resposta": ""
+      "resolvido": true,
+      "resposta": "Decidido em 2026-11-10: situação por Ordem (ativo, licenciado, desligado, com data) e data de falecimento no cadastro. Desligados e falecidos saem do quadro, das fichas em lote e das contagens; o registro é mantido. A exclusão do cadastro continua possível só para irmão sem lançamentos no caixa."
     },
     {
       "pergunta": "FICHAS, modelos. Quais fichas precisam ser emitidas e quais são os modelos oficiais de cada Ordem (campos, assinaturas, brasão)? Provisório no MVP: ficha cadastral completa e uma ficha de registro por Ordem em layout próprio, com os campos que existem no cadastro, sem campos de assinatura. Para reproduzir os formulários oficiais, enviar os modelos.",

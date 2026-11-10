@@ -2,10 +2,23 @@
 import { useState } from 'react';
 import { Button, Card, Checkbox, Input, Select } from '@/ds';
 import { LinkButton } from '@/components/LinkButton';
+import { SITUACOES } from '@/lib/formatar';
 import { useEnvio } from '@/lib/useEnvio';
 import { salvarIrmao } from './actions';
 
 const grade = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' };
+
+/** Situação do irmão na Ordem: quem sai é marcado como desligado, o registro não é apagado. */
+function Situacao({ prefixo, registro }) {
+  return (
+    <div style={grade}>
+      <Select label="Situação na Ordem" name={`${prefixo}_situacao`} defaultValue={registro.situacao ?? 'ativo'}
+        options={Object.entries(SITUACOES).map(([value, label]) => ({ value, label }))}
+        hint="Desligado sai do quadro e das fichas em lote; o registro é mantido." />
+      <Input label="Situação desde" name={`${prefixo}_situacao_desde`} type="date" defaultValue={registro.situacao_desde ?? ''} hint="Opcional." />
+    </div>
+  );
+}
 
 export function IrmaoForm({ irmao, lojas }) {
   // useEnvio: se o salvamento devolver erro (CPF repetido, por exemplo), o formulário não é limpo.
@@ -25,7 +38,7 @@ export function IrmaoForm({ irmao, lojas }) {
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
           <Input label="Nome completo" name="nome" defaultValue={irmao?.nome ?? ''} required autoFocus />
           <div style={grade}>
-            <Input label="CPF" name="cpf" defaultValue={irmao?.cpf ?? ''} inputMode="numeric" placeholder="Somente números" required hint="11 dígitos" />
+            <Input label="CPF" name="cpf" defaultValue={irmao?.cpf ?? ''} inputMode="numeric" placeholder="Somente números" required hint="11 dígitos, com ou sem pontuação" />
             <Input label="CIM" name="cim" defaultValue={irmao?.cim ?? ''} />
             <Input label="Data de nascimento" name="data_nascimento" type="date" defaultValue={irmao?.data_nascimento ?? ''} />
           </div>
@@ -37,6 +50,9 @@ export function IrmaoForm({ irmao, lojas }) {
             <Input label="Endereço" name="endereco" defaultValue={irmao?.endereco ?? ''} wrapperStyle={{ gridColumn: '1 / -1' }} />
             <Input label="CEP" name="cep" defaultValue={irmao?.cep ?? ''} />
             <Input label="Foto (URL)" name="foto" type="url" defaultValue={irmao?.foto ?? ''} hint="Endereço da imagem no armazenamento externo" />
+          </div>
+          <div style={grade}>
+            <Input label="Data de falecimento" name="data_falecimento" type="date" defaultValue={irmao?.data_falecimento ?? ''} hint="Preencha só em caso de falecimento: o irmão sai dos quadros e o cadastro é mantido." />
           </div>
         </div>
       </Card>
@@ -71,6 +87,7 @@ export function IrmaoForm({ irmao, lojas }) {
                 <Input label="Instalação 2º P" name="ar_data_instalacao_2p" type="date" defaultValue={ar.data_instalacao_2p ?? ''} />
                 <Input label="Instalação 1º P" name="ar_data_instalacao_1p" type="date" defaultValue={ar.data_instalacao_1p ?? ''} />
               </div>
+              <Situacao prefixo="ar" registro={ar} />
             </>
           )}
         </div>
@@ -91,6 +108,7 @@ export function IrmaoForm({ irmao, lojas }) {
                 <Input label="Instalação VM" name="ma_data_instalacao_vm" type="date" defaultValue={ma.data_instalacao_vm ?? ''} />
                 <Input label="Marca do candidato" name="ma_marca_candidato" defaultValue={ma.marca_candidato ?? ''} />
               </div>
+              <Situacao prefixo="ma" registro={ma} />
             </>
           )}
         </div>
@@ -106,11 +124,17 @@ export function IrmaoForm({ irmao, lojas }) {
                 <Input label="Elevação" name="na_data_elevacao" type="date" defaultValue={na.data_elevacao ?? ''} />
                 <Input label="Instalação VC" name="na_data_instalacao_vc" type="date" defaultValue={na.data_instalacao_vc ?? ''} />
               </div>
+              <Situacao prefixo="na" registro={na} />
             </>
           )}
         </div>
       </Card>
 
+      {((irmao?.arco_real && !temAR) || (irmao?.marca && !temMarca) || (irmao?.nauta && !temNauta)) && (
+        <p role="status" style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--fs-sm)', color: 'var(--status-warning-fg)', background: 'var(--status-warning-bg)', borderRadius: 'var(--radius-2)' }}>
+          Desmarcar uma Ordem apaga o registro do irmão nela (datas, proponentes) ao salvar. Se o irmão saiu da Ordem, mantenha a caixa marcada e mude a situação para Desligado.
+        </p>
+      )}
       {state?.erro && (
         <p role="alert" style={{ color: 'var(--status-danger-fg)', fontSize: 'var(--fs-sm)' }}>{state.erro}</p>
       )}

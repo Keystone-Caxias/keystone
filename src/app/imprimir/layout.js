@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { ConfiguracaoPendente } from '@/components/ConfiguracaoPendente';
+import { obterAcesso } from '@/lib/acesso';
 import { configurado, createClient } from '@/lib/supabase/server';
 import './imprimir.css';
 
@@ -10,7 +11,8 @@ export const dynamic = 'force-dynamic';
 export default async function ImprimirLayout({ children }) {
   if (!configurado()) return <ConfiguracaoPendente />;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, papel } = await obterAcesso(supabase);
   if (!user) redirect('/login');
+  if (!papel) redirect('/'); // a área interna mostra a tela "Acesso pendente"
   return <div className="area-impressao">{children}</div>;
 }

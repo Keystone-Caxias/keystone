@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Icon, IconButton } from '@/ds';
 import { sair } from '@/app/login/actions';
+import { PAPEIS } from '@/lib/formatar';
 import { Emblema, MarcaDagua } from './Emblema';
 
 const NAV = [
@@ -69,7 +70,7 @@ export function Sidebar({ user }) {
         <div style={{ width: 30, height: 30, flex: '0 0 auto', borderRadius: '50%', background: 'var(--gold-500)', color: 'var(--navy-700)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-display)', fontSize: 14 }}>{iniciais(nome)}</div>
         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
           <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--neutral-0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={user.email}>{nome}</div>
-          <div style={{ fontSize: 10, color: 'rgba(250,248,244,.55)' }}>Oficial em exercício</div>
+          <div style={{ fontSize: 10, color: 'rgba(250,248,244,.55)' }}>{PAPEIS[user.papel] ?? 'Oficial em exercício'}</div>
         </div>
         <form action={sair}>
           <IconButton icon="log-out" label="Sair" size="sm" type="submit" style={{ color: 'rgba(250,248,244,.72)' }} />

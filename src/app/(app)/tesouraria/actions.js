@@ -1,7 +1,8 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { ORDEM_DB, TIPOS_LANCAMENTO, centavosParaNumeric, dataValida, lerMoeda, lerOrdem, periodoDoAno } from '@/lib/formatar';
+import { recusaDeGravacao } from '@/lib/acesso';
+import { FORMAS_PAGAMENTO, ORDEM_DB, TIPOS_LANCAMENTO, centavosParaNumeric, dataValida, hojeISO, lerMoeda, lerOrdem, periodoDoAno } from '@/lib/formatar';
 import { createClient } from '@/lib/supabase/server';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,6 +18,8 @@ const uuid = (fd, k) => {
 };
 
 function traduzirErro(error) {
+  // KS001: gatilho barrar_periodo_fechado (a mensagem do banco traz a data do fechamento).
+  if (error.code === 'KS001') return `${error.message}: lançamentos com data até o fechamento não podem ser criados, alterados nem excluídos. Um administrador pode reabrir o período em Ajustes.`;
   if (error.code === '23503' && /categoria/.test(error.message || '')) return 'A categoria escolhida não vale para este tipo de lançamento. Escolha outra categoria.';
   if (error.code === '23503') return 'O irmão escolhido não consta mais no cadastro.';
   if (error.code === '23514') return 'O valor deve ser maior que zero.';
@@ -27,6 +30,7 @@ function traduzirErro(error) {
 function revalidar() {
   revalidatePath('/');
   revalidatePath('/tesouraria');
+  revalidatePath('/tesouraria/historico');
 }
 
 /**
@@ -58,9 +62,13 @@ export async function salvarLancamento(prevState, formData) {
   if (!ordem) return { erro: 'Escolha a Ordem do lançamento.' };
   if (!tipo || !Object.hasOwn(TIPOS_LANCAMENTO, tipo)) return { erro: 'Informe se é entrada ou saída.' };
   if (!dataValida(data)) return { erro: 'Informe a data do lançamento.' };
+  // O caixa registra o que já aconteceu: nada de lançamento com data futura.
+  if (data > hojeISO()) return { erro: 'A data do lançamento não pode ser futura.' };
   if (valor == null) return { erro: 'Informe um valor maior que zero, como 1.240,50.' };
   if (!categoriaId) return { erro: 'Escolha a categoria.' };
   if (descricao && descricao.length > 500) return { erro: 'A descrição deve ter no máximo 500 caracteres.' };
+  const forma = texto(formData, 'forma_pagamento');
+  if (forma && !Object.hasOwn(FORMAS_PAGAMENTO, forma)) return { erro: 'Forma de pagamento inválida.' };
 
   const lancamento = {
     ordem: ORDEM_DB[ordem],
@@ -70,9 +78,12 @@ export async function salvarLancamento(prevState, formData) {
     categoria_id: categoriaId,
     descricao,
     macom_id: uuid(formData, 'macom_id'),
+    forma_pagamento: forma,
   };
 
   const supabase = await createClient();
+  const recusa = await recusaDeGravacao(supabase);
+  if (recusa) return { erro: recusa };
   if (id) {
     if (!UUID.test(id)) return { erro: 'Lançamento não identificado.' };
     const { data: alterados, error } = await supabase.from('lancamento_caixa').update(lancamento).eq('id', id).select('id');
@@ -92,6 +103,8 @@ export async function excluirLancamento(prevState, formData) {
   const id = texto(formData, 'id');
   if (!id || !UUID.test(id)) return { erro: 'Lançamento não identificado.' };
   const supabase = await createClient();
+  const recusa = await recusaDeGravacao(supabase);
+  if (recusa) return { erro: recusa };
   const { error } = await supabase.from('lancamento_caixa').delete().eq('id', id);
   if (error) return { erro: traduzirErro(error) };
   revalidar();

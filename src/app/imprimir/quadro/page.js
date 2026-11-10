@@ -1,6 +1,6 @@
 import { Aviso, Folha, td, th } from '@/components/Folha';
 import { listarIrmaosDaOrdem } from '@/lib/dados';
-import { ORDENS, formatarData, hojeISO, lerOrdem } from '@/lib/formatar';
+import { ORDENS, SITUACOES, formatarData, hojeISO, lerOrdem } from '@/lib/formatar';
 import { createClient } from '@/lib/supabase/server';
 import { BarraImpressao } from '../BarraImpressao';
 
@@ -29,10 +29,10 @@ export default async function QuadroPage({ searchParams }) {
     <>
       <BarraImpressao voltar="/relatorios" eyebrow="Quadro de irmãos" titulo={ordem ? ORDENS[ordem] : 'Ordem não informada'} podeImprimir={irmaos.length > 0} />
       <Folha ordem={ordem || undefined} eyebrow={ordem ? ORDENS[ordem] : undefined} titulo="Quadro de irmãos"
-        subtitulo={ordem ? `${irmaos.length} ${irmaos.length === 1 ? 'irmão' : 'irmãos'} com registro em ${formatarData(hojeISO())}` : undefined}
+        subtitulo={ordem ? `${irmaos.length} ${irmaos.length === 1 ? 'irmão' : 'irmãos'} no quadro em ${formatarData(hojeISO())} (ativos e licenciados)` : undefined}
         emissao={{ quando: new Date().toISOString(), quem: user?.email }}>
         {!ordem && <Aviso>Escolha a Ordem em Relatórios para emitir o quadro.</Aviso>}
-        {ordem && irmaos.length === 0 && <Aviso>Nenhum irmão com registro em {ORDENS[ordem]}.</Aviso>}
+        {ordem && irmaos.length === 0 && <Aviso>Nenhum irmão ativo ou licenciado em {ORDENS[ordem]}.</Aviso>}
         {irmaos.length > 0 && (
           <table>
             <thead>
@@ -43,6 +43,7 @@ export default async function QuadroPage({ searchParams }) {
                 <th style={th}>{c.corpo[0]}</th>
                 <th style={th}>Loja simbólica</th>
                 <th style={th}>{c.ingresso[0]}</th>
+                <th style={th}>Situação</th>
                 <th style={th}>Telefone</th>
               </tr>
             </thead>
@@ -57,6 +58,7 @@ export default async function QuadroPage({ searchParams }) {
                     <td style={td}>{registro[c.corpo[1]] || '—'}</td>
                     <td style={td}>{i.loja ? `${i.loja.nome} · ${i.loja.potencia_simbolica}` : '—'}</td>
                     <td className="numeric" style={td}>{formatarData(registro[c.ingresso[1]])}</td>
+                    <td style={td}>{SITUACOES[registro.situacao] ?? '—'}</td>
                     <td className="numeric" style={td}>{i.telefone || '—'}</td>
                   </tr>
                 );

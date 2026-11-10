@@ -4,7 +4,7 @@ import { ORDEM_DB, ORDEM_UI, centavos } from './formatar';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const SELECT_IRMAO = 'id, nome, cpf, cim, email, telefone, data_nascimento, endereco, cep, foto, data_iniciacao, data_passagem, data_elevacao, data_instalacao_mi, loja_id, created_at, updated_at, loja(id, nome, potencia_simbolica), arco_real(*), marca(*), nauta(*)';
+const SELECT_IRMAO = 'id, nome, cpf, cim, email, telefone, data_nascimento, data_falecimento, endereco, cep, foto, data_iniciacao, data_passagem, data_elevacao, data_instalacao_mi, loja_id, created_at, updated_at, loja(id, nome, potencia_simbolica), arco_real(*), marca(*), nauta(*)';
 
 function um(x) {
   return Array.isArray(x) ? (x[0] ?? null) : (x ?? null);
@@ -66,10 +66,15 @@ export async function membrosPorLoja(supabase) {
   return mapa;
 }
 
-/** Contagem de registros nas cinco tabelas. */
+/**
+ * Contagem de registros nas cinco tabelas. Nas três Ordens conta o quadro atual:
+ * ficam de fora os desligados e os irmãos falecidos (mesmo critério de `listarIrmaosDaOrdem`).
+ */
 export async function contagens(supabase) {
   const tabelas = ['macom', 'arco_real', 'marca', 'nauta', 'loja'];
-  const resultados = await Promise.all(tabelas.map((t) => supabase.from(t).select('id', { count: 'exact', head: true })));
+  const resultados = await Promise.all(tabelas.map((t) => (t === 'macom' || t === 'loja'
+    ? supabase.from(t).select('id', { count: 'exact', head: true })
+    : supabase.from(t).select('id, macom!inner(data_falecimento)', { count: 'exact', head: true }).neq('situacao', 'desligado').is('macom.data_falecimento', null))));
   const saida = {};
   tabelas.forEach((t, i) => {
     if (resultados[i].error) throw falha(`contar ${t}`, resultados[i].error);
@@ -85,12 +90,17 @@ export async function listarIrmaosResumo(supabase) {
   return data ?? [];
 }
 
-/** Irmãos que têm registro na Ordem ('arco-real' | 'marca' | 'nautas'), com o cadastro completo. */
+/**
+ * Quadro atual da Ordem ('arco-real' | 'marca' | 'nautas'), com o cadastro completo:
+ * irmãos com registro na Ordem, exceto desligados e falecidos (licenciados continuam no quadro).
+ */
 export async function listarIrmaosDaOrdem(supabase, ordem) {
   const tabela = ORDEM_DB[ordem];
   if (!tabela) return [];
   const select = SELECT_IRMAO.replace(`${tabela}(*)`, `${tabela}!inner(*)`);
-  const { data, error } = await supabase.from('macom').select(select).order('nome', { ascending: true }).limit(1000);
+  const { data, error } = await supabase.from('macom').select(select)
+    .neq(`${tabela}.situacao`, 'desligado').is('data_falecimento', null)
+    .order('nome', { ascending: true }).limit(1000);
   if (error) throw falha('listar irmãos da Ordem', error);
   return (data ?? []).map(normalizarIrmao);
 }
@@ -99,7 +109,7 @@ export async function listarIrmaosDaOrdem(supabase, ordem) {
 // Para as telas, `ordem` usa as chaves de interface ('arco-real', 'marca', 'nautas')
 // e `valor` vem em centavos inteiros.
 
-const SELECT_LANCAMENTO = 'id, ordem, tipo, data, valor, descricao, categoria_id, macom_id, criado_por_email, created_at, updated_at, categoria:categoria_caixa(id, nome), irmao:macom(id, nome)';
+const SELECT_LANCAMENTO = 'id, numero, ordem, tipo, data, valor, descricao, forma_pagamento, categoria_id, macom_id, criado_por_email, created_at, updated_at, categoria:categoria_caixa(id, nome), irmao:macom(id, nome)';
 const PAGINA = 1000; // teto de linhas por resposta da API do Supabase
 const MAX_PAGINAS = 10;
 
@@ -162,4 +172,37 @@ export async function resumoCaixa(supabase, { de = '0001-01-01', ate = '9999-12-
     };
   }
   return resumo;
+}
+
+/** Data até a qual o caixa de cada Ordem está fechado: { 'arco-real': 'AAAA-MM-DD' | undefined, … }. */
+export async function listarFechamentos(supabase) {
+  const { data, error } = await supabase.from('caixa_fechamento').select('ordem, fechado_ate, definido_por_email, updated_at');
+  if (error) throw falha('ler o fechamento do caixa', error);
+  const mapa = {};
+  for (const r of data ?? []) mapa[ORDEM_UI[r.ordem]] = { ate: r.fechado_ate, por: r.definido_por_email, em: r.updated_at };
+  return mapa;
+}
+
+/**
+ * Histórico de criações, alterações e exclusões de lançamentos, do mais recente para o mais antigo.
+ * Com `lancamentoId`, só os eventos daquele lançamento. `antes`/`depois` trazem a linha como estava
+ * no banco (Ordem no formato do banco, valor NUMERIC).
+ */
+export async function listarHistorico(supabase, { lancamentoId, limite = 200 } = {}) {
+  let consulta = supabase.from('lancamento_caixa_historico').select('id, lancamento_id, numero, operacao, antes, depois, por_email, em')
+    .order('id', { ascending: false }).limit(limite);
+  if (lancamentoId) {
+    if (!UUID.test(lancamentoId)) return [];
+    consulta = consulta.eq('lancamento_id', lancamentoId);
+  }
+  const { data, error } = await consulta;
+  if (error) throw falha('ler o histórico do caixa', error);
+  return data ?? [];
+}
+
+/** Contas autorizadas a usar a plataforma, com o papel de cada uma. */
+export async function listarOficiais(supabase) {
+  const { data, error } = await supabase.from('oficial').select('user_id, email, papel, created_at').order('email', { ascending: true });
+  if (error) throw falha('listar oficiais', error);
+  return data ?? [];
 }

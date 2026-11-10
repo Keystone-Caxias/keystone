@@ -7,6 +7,18 @@ export const ORDEM_DB = { 'arco-real': 'arco_real', marca: 'marca', nautas: 'nau
 export const ORDEM_UI = { arco_real: 'arco-real', marca: 'marca', nauta: 'nautas' };
 
 export const TIPOS_LANCAMENTO = { entrada: 'Entrada', saida: 'Saída' };
+export const FORMAS_PAGAMENTO = { dinheiro: 'Dinheiro', pix: 'PIX', transferencia: 'Transferência', cartao: 'Cartão', cheque: 'Cheque', outro: 'Outro' };
+
+/** Situação do irmão em cada Ordem (enum situacao_ordem). */
+export const SITUACOES = { ativo: 'Ativo', licenciado: 'Licenciado', desligado: 'Desligado' };
+
+/** Papéis de acesso (enum papel_oficial) e o que cada um faz. */
+export const PAPEIS = { administrador: 'Administrador', oficial: 'Oficial', leitura: 'Somente leitura' };
+export const PAPEIS_DESCRICAO = {
+  administrador: 'Tudo o que o oficial faz, mais autorizar oficiais e fechar ou reabrir o caixa.',
+  oficial: 'Cadastra e altera irmãos, lojas, lançamentos e categorias.',
+  leitura: 'Consulta as telas e emite documentos, sem gravar nada.',
+};
 
 /** Fuso de referência: o servidor (Vercel) roda em UTC, os oficiais não. */
 export const FUSO = 'America/Sao_Paulo';
@@ -34,6 +46,18 @@ export function formatarDataHora(iso) {
 export function formatarCpf(cpf) {
   const d = String(cpf || '').replace(/\D/g, '');
   return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : (cpf || '—');
+}
+
+/** true quando os 11 dígitos formam um CPF com dígitos verificadores corretos. */
+export function cpfValido(cpf) {
+  const d = String(cpf || '').replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  for (const n of [9, 10]) {
+    let soma = 0;
+    for (let i = 0; i < n; i += 1) soma += Number(d[i]) * (n + 1 - i);
+    if (((soma * 10) % 11) % 10 !== Number(d[n])) return false;
+  }
+  return true;
 }
 
 // ---------- dinheiro ----------
@@ -76,6 +100,56 @@ export function lerMoeda(texto) {
   const [inteiro, decimal = ''] = s.split('.');
   const c = Number(inteiro) * 100 + Number(decimal.padEnd(2, '0'));
   return Number.isSafeInteger(c) && c > 0 && c <= MAX_CENTAVOS ? c : null;
+}
+
+const UNIDADES = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+const DEZENAS = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+const CENTENAS = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+/** 1 a 999 por extenso. */
+function grupoPorExtenso(n) {
+  if (n === 100) return 'cem';
+  const partes = [];
+  if (n >= 100) partes.push(CENTENAS[Math.floor(n / 100)]);
+  const resto = n % 100;
+  if (resto >= 20) {
+    partes.push(DEZENAS[Math.floor(resto / 10)]);
+    if (resto % 10) partes.push(UNIDADES[resto % 10]);
+  } else if (resto > 0) partes.push(UNIDADES[resto]);
+  return partes.join(' e ');
+}
+
+/** Inteiro de 0 a 999.999.999.999 por extenso ('mil duzentos e quarenta'). */
+function inteiroPorExtenso(n) {
+  if (n === 0) return 'zero';
+  const ESCALAS = [['', ''], ['mil', 'mil'], ['milhão', 'milhões'], ['bilhão', 'bilhões']];
+  const grupos = [];
+  for (let i = 0, r = n; r > 0; i += 1, r = Math.floor(r / 1000)) {
+    const g = r % 1000;
+    if (g === 0) continue;
+    const nome = i === 1 && g === 1 ? 'mil' : [grupoPorExtenso(g), ESCALAS[i][g === 1 ? 0 : 1]].filter(Boolean).join(' ');
+    grupos.unshift({ g, nome });
+  }
+  // "e" antes do último grupo quando ele é menor que 100 ou centena exata; nos demais, só espaço.
+  return grupos.map((x, i) => {
+    if (i === 0) return x.nome;
+    const ultimo = i === grupos.length - 1;
+    return `${ultimo && (x.g < 100 || x.g % 100 === 0) ? ' e ' : ' '}${x.nome}`;
+  }).join('');
+}
+
+/** Centavos -> valor por extenso para recibos: 124050 -> 'mil duzentos e quarenta reais e cinquenta centavos'. */
+export function valorPorExtenso(c) {
+  const n = Math.abs(Math.round(Number(c) || 0));
+  const reais = Math.floor(n / 100);
+  const cents = n % 100;
+  const partes = [];
+  if (reais > 0) {
+    const milhaoExato = reais >= 1_000_000 && reais % 1_000_000 === 0;
+    partes.push(`${inteiroPorExtenso(reais)} ${reais === 1 ? 'real' : `${milhaoExato ? 'de ' : ''}reais`}`);
+  }
+  if (cents > 0) partes.push(`${inteiroPorExtenso(cents)} ${cents === 1 ? 'centavo' : 'centavos'}`);
+  return partes.length ? partes.join(' e ') : 'zero real';
 }
 
 // ---------- datas e períodos ----------

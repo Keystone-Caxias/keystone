@@ -2,7 +2,7 @@
 import { useActionState, useState } from 'react';
 import { Button, Card, Dialog, Input, Radio, Select } from '@/ds';
 import { LinkButton } from '@/components/LinkButton';
-import { ORDENS, TIPOS_LANCAMENTO, formatarData, formatarDataHora, formatarMoeda } from '@/lib/formatar';
+import { FORMAS_PAGAMENTO, ORDENS, TIPOS_LANCAMENTO, formatarData, formatarDataHora, formatarMoeda } from '@/lib/formatar';
 import { useEnvio } from '@/lib/useEnvio';
 import { excluirLancamento, salvarLancamento } from './actions';
 
@@ -20,7 +20,7 @@ function Volta({ volta }) {
 }
 
 /** Formulário de lançamento (novo e edição). Envia por `useEnvio`: erro de validação não apaga nada. */
-export function LancamentoForm({ lancamento, categorias, irmaos, inicial, volta, hrefLista }) {
+export function LancamentoForm({ lancamento, categorias, irmaos, inicial, volta, hrefLista, fechamentos = {}, hoje }) {
   const [state, enviar, pending] = useEnvio(salvarLancamento);
   const [ordem, setOrdem] = useState(lancamento?.ordem ?? inicial.ordem);
   const [tipo, setTipo] = useState(lancamento?.tipo ?? 'entrada');
@@ -29,6 +29,12 @@ export function LancamentoForm({ lancamento, categorias, irmaos, inicial, volta,
   const [categoriaId, setCategoriaId] = useState(lancamento?.categoria_id ?? '');
   const [macomId, setMacomId] = useState(lancamento?.macom_id ?? '');
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '');
+  const [forma, setForma] = useState(lancamento?.forma_pagamento ?? '');
+
+  // Caixa fechado: o banco recusa de qualquer forma; aqui o oficial fica sabendo antes de enviar.
+  const fechadoAte = fechamentos[ordem]?.ate;
+  const travado = Boolean(lancamento && fechamentos[lancamento.ordem]?.ate && lancamento.data <= fechamentos[lancamento.ordem].ate);
+  const dataFechada = Boolean(fechadoAte && data && data <= fechadoAte);
 
   const categoriasDoTipo = categorias.filter((c) => c.tipo === tipo);
   const trocarTipo = (novo) => {
@@ -52,7 +58,8 @@ export function LancamentoForm({ lancamento, categorias, irmaos, inicial, volta,
             </div>
           </fieldset>
           <div style={grade}>
-            <Input label="Data" name="data" type="date" value={data} onChange={(e) => setData(e.target.value)} required />
+            <Input label="Data" name="data" type="date" value={data} onChange={(e) => setData(e.target.value)} required max={hoje}
+              hint={fechadoAte ? `Caixa fechado até ${formatarData(fechadoAte)}.` : undefined} />
             <Input label="Valor (R$)" name="valor" inputMode="decimal" autoComplete="off" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} required
               hint="Exemplo: 1.240,50" className="numeric" autoFocus={!lancamento} />
           </div>
@@ -61,20 +68,29 @@ export function LancamentoForm({ lancamento, categorias, irmaos, inicial, volta,
             hint={categoriasDoTipo.length === 0 ? 'Nenhuma categoria deste tipo. Cadastre em Ajustes.' : 'As categorias são mantidas em Ajustes.'} />
           <Select label="Irmão" name="macom_id" value={macomId} onChange={(e) => setMacomId(e.target.value)} placeholder="Sem irmão vinculado"
             options={irmaos.map((i) => ({ value: i.id, label: i.nome }))} hint="Opcional. Use quando o lançamento for de um irmão, como anuidade ou joia." />
+          <Select label="Forma de pagamento" name="forma_pagamento" value={forma} onChange={(e) => setForma(e.target.value)} placeholder="Não informada"
+            options={Object.entries(FORMAS_PAGAMENTO).map(([value, label]) => ({ value, label }))} hint="Opcional. Só informativa: o saldo da Ordem é único." />
           <Input label="Descrição" name="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={500} hint="Opcional." />
         </div>
       </Card>
 
       {lancamento && (
         <p className="numeric" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
-          Lançado{lancamento.criado_por_email ? ` por ${lancamento.criado_por_email}` : ''} em {formatarDataHora(lancamento.created_at)}
+          Lançamento nº {lancamento.numero} · lançado{lancamento.criado_por_email ? ` por ${lancamento.criado_por_email}` : ''} em {formatarDataHora(lancamento.created_at)}
           {lancamento.updated_at !== lancamento.created_at ? ` · última alteração em ${formatarDataHora(lancamento.updated_at)}` : ''}
+        </p>
+      )}
+      {(travado || dataFechada) && (
+        <p role="status" style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--fs-sm)', color: 'var(--status-warning-fg)', background: 'var(--status-warning-bg)', borderRadius: 'var(--radius-2)' }}>
+          {travado
+            ? `Este lançamento pertence a um período fechado (${ORDENS[lancamento.ordem]}, até ${formatarData(fechamentos[lancamento.ordem].ate)}) e não pode ser alterado nem excluído. Um administrador pode reabrir o período em Ajustes.`
+            : `O caixa de ${ORDENS[ordem]} está fechado até ${formatarData(fechadoAte)}. Escolha uma data posterior.`}
         </p>
       )}
       {state?.erro && <p role="alert" style={{ color: 'var(--status-danger-fg)', fontSize: 'var(--fs-sm)' }}>{state.erro}</p>}
       <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
         <LinkButton href={hrefLista} variant="secondary" type="button">Cancelar</LinkButton>
-        <Button type="submit" iconLeft="check" disabled={pending}>{pending ? 'Salvando' : lancamento ? 'Salvar alterações' : 'Registrar lançamento'}</Button>
+        <Button type="submit" iconLeft="check" disabled={pending || travado || dataFechada}>{pending ? 'Salvando' : lancamento ? 'Salvar alterações' : 'Registrar lançamento'}</Button>
       </div>
     </form>
   );
@@ -87,13 +103,13 @@ export function ExcluirLancamento({ lancamento, volta }) {
   return (
     <Card eyebrow="Zona de risco" title="Excluir lançamento" style={{ maxWidth: 'var(--width-form-max)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Remove o lançamento e recalcula o saldo da Ordem. Não pode ser desfeito.</p>
+        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Remove o lançamento e recalcula o saldo da Ordem. A exclusão fica registrada no histórico do caixa.</p>
         <Button size="sm" variant="danger" iconLeft="trash-2" onClick={() => setAberto(true)}>Excluir</Button>
       </div>
       {state?.erro && <p role="alert" style={{ color: 'var(--status-danger-fg)', fontSize: 'var(--fs-sm)', marginTop: 'var(--space-3)' }}>{state.erro}</p>}
       {aberto && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          <Dialog title="Excluir lançamento?" eyebrow="Confirmação" description={`${resumo}. O lançamento sai do caixa.`} onClose={() => setAberto(false)} width={460}
+          <Dialog title="Excluir lançamento?" eyebrow="Confirmação" description={`${resumo}. O lançamento sai do caixa; o histórico guarda quem excluiu e quando.`} onClose={() => setAberto(false)} width={460}
             footer={(
               <>
                 <Button size="sm" variant="secondary" onClick={() => setAberto(false)}>Cancelar</Button>
